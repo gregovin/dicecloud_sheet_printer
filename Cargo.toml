@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 genpdf = {version="0.2.0"}
+libmath= {version="0.2.1"}
 
 [features]
 hyphenation = ["genpdf/hyphenation"]
