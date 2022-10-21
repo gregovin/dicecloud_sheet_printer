@@ -1,13 +1,30 @@
 use std::env;
 use genpdf::{Element, Alignment};
 use genpdf::{elements,fonts, style};
-use dicecloud_sheet_printer::{generate_pdf,holding_structs::*};
+use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,holding_structs::*};
 use serde_json::Value;
-fn main() {
+use tokio;
+use std::io;
+
+#[tokio::main]
+async fn main() {
     let mut doc = generate_pdf();
-    let username = "gregovin".to_string();
-    let psw = "stuff".to_string();
+    let mut username = String::new();
+    println!("Username:");
+    let stdin= io::stdin();
     
+    stdin.read_line(&mut username).expect("could not read username");
+    let mut psw = String::new();
+    println!("Password:");
+    stdin.read_line(&mut psw).expect("Fallied to get password");
+    let token =get_token(username, psw).await.expect("oops!");
+    println!("Success! Got token.");
+    println!("Enter Character ID:");
+    let mut char_id = String::new();
+    stdin.read_line(&mut char_id).expect("Failed to get character id");
+    println!("getting character");
+    let char_json = get_character(token,get_char_url(char_id));
+    println!("success!");
     doc.push(
         elements::Paragraph::new("Dungeons and Dragons")
             .aligned(Alignment::Left)

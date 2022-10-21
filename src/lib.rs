@@ -1,29 +1,34 @@
+use std::collections::HashMap;
+
 use reqwest;
-use futures::executor;
+use futures::{stream, StreamExt};
 use serde_json::Value;
 use genpdf::{Element, Alignment};
 use genpdf::{elements,fonts, style};
 
 pub mod holding_structs;
 
-pub fn get_token(username: String, psw: String)->String{
+pub async fn get_token(username: String, psw: String)->Result<String,reqwest::Error>{
     let client = reqwest::Client::new();
-    let res = executor::block_on(client.post("https://beta.dicecloud.com/api/login")
-        .header("Username",username)
-        .header("password",psw)
-        .send())
-        .expect("Dicecloud failed to respond");
-    let txt = executor::block_on(res.text()).expect("Dicecloud did not respond properly");
-    txt.split(",").next().unwrap().to_string().split(":").next().unwrap().to_string() //don't worry about it, I am sure this works :)
+    let mut map =HashMap::new();
+    map.insert("username",username);
+    map.insert("password",psw);
+    let res = client.post("https://beta.dicecloud.com/api/login")
+        .json(&map)
+        .send()
+        .await?;
+    let txt =res.text().await?;
+    Ok(txt.split(",").next().unwrap().to_string().split(":").next().unwrap().to_string()) //don't worry about it, I am sure this works :)
 }
 /// should have charcter_url=https://beta.dicecloud.com/api/creature/<creatureId>
-pub fn get_character(token: String, character_url: String)->Value{
+pub async fn get_character(token: String, character_url: String)->Value{
     let client= reqwest::Client::new();
-    let res = executor::block_on(client.post(character_url)
+    let res = client.post(character_url)
         .header("Autorization",token)
-        .send())
+        .send()
+        .await
         .expect("Dicecloud failed to respond");
-    let txt=executor::block_on(res.text()).expect("Dicecloud did not respond to request properly");
+    let txt=res.text().await.expect("Dicecloud did not respond to request properly");
     serde_json::from_str(&txt).expect("bad format")
 }
 pub fn get_char_url(caracter_id: String) -> String{

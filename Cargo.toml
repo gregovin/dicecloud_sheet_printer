@@ -8,8 +8,9 @@ edition = "2021"
 [dependencies]
 genpdf = {version="0.2.0"}
 reqwest= {version="0.11.12",features=["json"]}
-futures = {version="0.3"}
+futures= "0.3.5"
 serde_json = "1.0"
+tokio = {version="1.21.2",features = ["macros","rt-multi-thread"]}
 
 [features]
 hyphenation = ["genpdf/hyphenation"]
