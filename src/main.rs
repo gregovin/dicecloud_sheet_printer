@@ -1,6 +1,7 @@
 use std::env;
 use genpdf::{Element, Alignment};
 use genpdf::{elements,fonts, style};
+use dicecloud_sheet_printer::holding_structs::*;
 fn main() {
     let font = fonts::from_files("./Roboto","Roboto",None).expect("Failed to load font");
     let mut doc = genpdf::Document::new(font);
