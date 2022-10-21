@@ -165,29 +165,3 @@ impl SpellLevel{
     }
 }
 type SpellList = Vec<SpellLevel>;
-struct Character<'a>{
-    pub ability_scores: Vec<AbilityScore>,
-    pub saving_throws: Vec<Skill<'a>>,
-    pub skills: Vec<Skill<'a>>,
-    pub name: String,
-    pub prof_bonus: i64,
-    pub classes: Vec<Class>,
-    pub background: Background,
-    pub race: String,
-    pub alignment: String,
-    pub xp: i64,
-    pub hp: i64,
-    pub hit_dice: Vec<Die>,
-    pub attacks: Vec<Attack>,
-    pub other_profs: Vec<String>,
-    pub traits: String,
-    pub ideals: String,
-    pub bonds: String,
-    pub flaws: String,
-    pub equipment: Vec<Item>,
-    pub equiped: Vec<Item>,
-    pub coins: (i64,i64,i64,i64,i64),
-    pub features: Vec<String>,
-    pub spell_lists: Vec<SpellList>,
-    pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64)
-}
