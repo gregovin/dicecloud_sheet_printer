@@ -21,13 +21,14 @@ pub async fn get_token(username: String, psw: String)->Result<String,reqwest::Er
     if txt.contains("error"){
         return Ok("".to_string()); //if login fails, just pretend everything is ok
     }
-    Ok(txt.split(",").next().unwrap().to_string().split(":").next().unwrap().to_string()) //don't worry about it, I am sure this works :)
+    token = sedre_json::from_str(&txt)?["token"].as_str();
+    Ok(token.to_string())
 }
 /// should have charcter_url=https://beta.dicecloud.com/api/creature/<creatureId>
 pub async fn get_character(token: String, character_url: String)->Value{
     let client= reqwest::Client::new();
     let res = client.post(character_url)
-        .header("Authorization","Bearer "+token)
+        .header("Authorization",format!("Bearer {}",token))
         .send()
         .await
         .expect("Dicecloud failed to respond");

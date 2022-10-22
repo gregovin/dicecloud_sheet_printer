@@ -1,4 +1,6 @@
+use serde_json::Value;
 
+use std::str::FromStr;
 struct AbilityScore{
     score: i64,
     name: String,
@@ -186,11 +188,17 @@ impl SpellList{
         SpellList{levels, casting class, casting_ability, save_dc, atk_bonus}
     }
 }
+pub enum DamageMult{
+    Immune(String),
+    Resist(String),
+    Vuln(String),
+}
 
 pub struct Character{
     pub char_name: String,
     pub classes: Vec<Class>,
     pub background: String,
+    pub damage_mults: Vec<DamageMult>
     pub race: String,
     pub alignment: String,
     pub xp: i64,
@@ -202,6 +210,7 @@ pub struct Character{
     pub initiative: i64,
     pub speed: i64,
     pub hit_points: i64,
+    pub hit_dice: Vec<Die>,
     pub attacks: Vec<Attack>,
     pub equipped: Vec<Item>,
     pub traits: (String, String, String, String),
@@ -213,25 +222,118 @@ pub struct Character{
     pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64)
 }
 impl Character{
-    pub fn new()->Character{
+    pub fn new(char_json: Value)->Character{
+        let char_name=char_json["creatures"][0]["name"];
+        if char_name == Value::Null{
+            panic!("cannot find char name, probably because the api is wrong");
+        }
+        let char_name = char_name.as_str().to_string();
+        let alignment=char_json["creatures"][0]["alignment"].as_str().to_string().unwrap();
+        let xp: i64=char_json["creatures"][0]["denormalizedStats"]["xp"].as_i64().unwrap();
+        let mut ability_scores: Vec<AbilityScore> = vec![];
+        let mut skills: Vec<Skill> = vec![];
+        let mut saves: Vec<Skill> = vec![];
+        let initiative: i64;
+        let prof_bonus: i64;
+        let speed: i64;
+        let hit_points: i64;
+        let ac: i64;
+        let mut traits = (String::new(),String::new(),String::new(),String::new());
+        let mut attacks: Vec<Attack> =vec![];
+        let mut classes: Vec<Class> = vec![];
+        let props: Value = char_json["creatureProperties"];
+        let mut features: Vec<String> = vec![];
+        let mut hit_dice: Vec<Die> = vec![];
+        let mut idx =0;
+        while props[idx] != Value::Null{
+            let val = props[idx]
+            if val["type"].as_str==Some("attribute") && val["attributeType"]==Some("ability"){
+                ability_scores.push(AbilityScore::new(val["name"].as_str().to_string(),
+                    val["total"].as_i64().unwrap()));
+            } else if val["type"].as_str()==Some("skill"){
+                if val["name"].as_str()==Some("Initiative"){
+                    initiative=val["value"].as_i64().unwrap();
+                } else if val["skillType"].as_str()==Some("save"){
+                    let prf=val["proficiency"].as_str().unwrap();
+                    let prof = if prf =="0.5"{
+                        Profficiency::Half
+                    } else if prf == "1"{
+                        Profficiency::Profficient
+                    } else if prf == "2"{
+                        Proficiency::Expert;
+                    } else {
+                        Profficiency::None;
+                    };
+                    saves.push(Skill::new(val["value"].as_i64().unwrap(),
+                        val["name"].as_str().to_string(),prof));
+                } else if val["skillType"].as_str()==Some("skill"){
+                    let prf=val["proficiency"].as_str().unwrap();
+                    let prof = if prf =="0.5"{
+                        Profficiency::Half
+                    } else if prf == "1"{
+                        Profficiency::Profficient
+                    } else if prf == "2"{
+                        Proficiency::Expert;
+                    } else {
+                        Profficiency::None;
+                    };
+                    skills.push(Skill::new(val["value"].as_i64().unwrap(),
+                        val["name"].as_str().unwrap().to_string(),prof));
+                }
+            }else if val["type"].as_str()==Some("feature"){
+                features.push(val["name"].as_str().unwrap().to_string());
+            }else if val["type"].as_str()==Some("note"){
+                if val["name"].as_str()==Some("Flaws"){
+                    
+                } else if val["name"].as_str()==Some("Ideals"){
+
+                } else if val["name"].as_str()==Some("Personality Traits"){
+
+                } else if val["name"].as_str()==Some("Bonds"){
+
+                }
+            }else if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()=Some("hitDice"){
+                let total: i64 = val["total"].as_i64().unwrap()>0;
+                if total>0{
+                    let ds: String = val["hitDiceSize"].as_str().unwrap().to_string();
+                    let size: i64=ds.split("d").collect()[1].parse().unwrap();
+                    hit_dice.push(Die::new(size,total));
+                }
+            }else if val["type"].as_str()==Some("action"){
+                
+            }else if val["type"].as_str()==Some("class"){
+                classes.push(Class::new(val["name"].as_str().unwrap().to_string(),
+                    val["level"].as_i64().unwrap()));
+            }else if val["name"].as_str()==Some("Proficiency Bonus"){
+                prof_bonus=val["total"].as_i64().unwrap();
+            } else if val["name"].as_str()=="Speed"{
+                speed=val["value"].as_i64().unwrap();
+            } else if val["name"].as_str()=="Hit Points"{
+                hit_points=val["total"].as_i64().unwrap();
+            } else if val["name"].as_str()=="Armor Class"{
+                ac=val["total"].as_i64().unwrap();
+            }
+            idx +=1;
+        }
         Character{
-            char_name: String::new(),
-            classes: vec![],
+            char_name,
+            classes,
             background: String::new(),
+            damage_mults: vec![],
             race: String::new(),
-            alignment: String::new(),
-            xp: 0,
-            ability_scores: vec![],
-            prof_bonus: 0,
-            saving_throws: vec![],
-            skills: vec![],
-            ac: 0,
-            initiative: 0,
-            speed: 0,
-            hit_points: 0,
+            alignment,
+            xp,
+            ability_scores,
+            prof_bonus,
+            saving_throws,
+            skills,
+            ac,
+            initiative,
+            speed,
+            hit_points,
             attacks: vec![],
             equipped: vec![],
-            traits: (String::new(),String::new(),String::new(),String::new()),
+            traits,
             features: vec![],
             other_profs: vec![],
             carried: vec![],
