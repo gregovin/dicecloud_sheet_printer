@@ -18,17 +18,23 @@ pub async fn get_token(username: String, psw: String)->Result<String,reqwest::Er
         .send()
         .await?;
     let txt =res.text().await?;
+    if txt.contains("error"){
+        return Ok("".to_string()); //if login fails, just pretend everything is ok
+    }
     Ok(txt.split(",").next().unwrap().to_string().split(":").next().unwrap().to_string()) //don't worry about it, I am sure this works :)
 }
 /// should have charcter_url=https://beta.dicecloud.com/api/creature/<creatureId>
 pub async fn get_character(token: String, character_url: String)->Value{
     let client= reqwest::Client::new();
     let res = client.post(character_url)
-        .header("Autorization",token)
+        .header("Authorization","Bearer "+token)
         .send()
         .await
         .expect("Dicecloud failed to respond");
     let txt=res.text().await.expect("Dicecloud did not respond to request properly");
+    if txt.contains("'error': 'Permission denied'"){
+        panic!("Permision Denied!"); //this is definitely a panic case.
+    }
     serde_json::from_str(&txt).expect("bad format")
 }
 pub fn get_char_url(caracter_id: String) -> String{

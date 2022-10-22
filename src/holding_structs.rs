@@ -23,25 +23,20 @@ enum Profficiency {
     Profficient,
     Expert,
 }
-struct Skill<'a>{
-    base_score: &'a AbilityScore,
+struct Skill{
+    bonus: i64,
     name: String,
     prof_rank: Profficiency
 }
-impl Skill<'_>{
+impl Skill{
     pub fn get_prof(&self)->&Profficiency{
         &self.prof_rank
     }
     pub fn get_mod(&self,prof_bonus: i64)->i64{
-        self.base_score.get_modifier()+match self.get_prof(){
-            Profficiency::None => 0,
-            Profficiency::Half => prof_bonus/2,
-            Profficiency::Profficient => prof_bonus,
-            Profficiency::Expert => 2*prof_bonus,
-        }
+        self.bonus
     }
-    pub fn new<'a>(name: String, base_score: &'a AbilityScore, prof_rank: Profficiency)->Skill<'a>{
-        Skill {base_score, name, prof_rank}
+    pub fn new(name: String, bonus: i64, prof_rank: Profficiency)->Skill{
+        Skill {bonus, name, prof_rank}
     }
 }
 struct Class{
@@ -164,4 +159,85 @@ impl SpellLevel{
         SpellLevel { level, spells }
     }
 }
-type SpellList = Vec<SpellLevel>;
+struct SpellList{
+    levels: Vec<SpellLevel>,
+    casting_class: String,
+    casting_ability: String,
+    save_dc: i64,
+    atk_bonus: i64,
+}
+impl SpellList{
+    pub fn get_levels(&self)->&Vec<SpellLevel>{
+        &self.levels
+    }
+    pub fn get_class(&self)->&String{
+        &self.casting_class
+    }
+    pub fn get_ability(&self)->&String{
+        &self.casting_ability
+    }
+    pub fn get_dc(&self)->i64{
+        self.save_dc
+    }
+    pub fn get_bonus(&self)->i64{
+        self.atk_bonus
+    }
+    pub fn new(levels: Vec<SpellLevel>,casting_class: String,casting_ability: String,save_dc: i64, atk_bonus: i64)->SpellList{
+        SpellList{levels, casting class, casting_ability, save_dc, atk_bonus}
+    }
+}
+
+pub struct Character{
+    pub char_name: String,
+    pub classes: Vec<Class>,
+    pub background: String,
+    pub race: String,
+    pub alignment: String,
+    pub xp: i64,
+    pub ability_scores: Vec<AbilityScore>,
+    pub prof_bonus: i64,
+    pub saving_throws: Vec<Skill>
+    pub skills: Vec<Skill>,
+    pub ac: i64,
+    pub initiative: i64,
+    pub speed: i64,
+    pub hit_points: i64,
+    pub attacks: Vec<Attack>,
+    pub equipped: Vec<Item>,
+    pub traits: (String, String, String, String),
+    pub features: Vec<String>,
+    pub other_profs: Vec<String>,
+    pub carried: Vec<Item>,
+    pub coins: (i64,i64,i64,i64,i64)
+    pub spell_lists: Vec<SpellList>
+    pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64)
+}
+impl Character{
+    pub fn new()->Character{
+        Character{
+            char_name: String::new(),
+            classes: vec![],
+            background: String::new(),
+            race: String::new(),
+            alignment: String::new(),
+            xp: 0,
+            ability_scores: vec![],
+            prof_bonus: 0,
+            saving_throws: vec![],
+            skills: vec![],
+            ac: 0,
+            initiative: 0,
+            speed: 0,
+            hit_points: 0,
+            attacks: vec![],
+            equipped: vec![],
+            traits: (String::new(),String::new(),String::new(),String::new()),
+            features: vec![],
+            other_profs: vec![],
+            carried: vec![],
+            coins: (0,0,0,0,0),
+            spell_lists: vec![],
+            spell_slots: (0,0,0,0,0,0,0,0,0)
+        }
+    }
+}

@@ -31,6 +31,9 @@ async fn main() {
             .styled(style::Style::new().bold().with_font_size(20)),
     );
     let mut table = elements::TableLayout::new(vec![1,2]);
+    if let Value::Object(mp)=char_json{
+
+    }
     table.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
     table
         .row()
