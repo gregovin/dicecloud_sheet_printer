@@ -8,30 +8,34 @@ use genpdf::{elements,fonts, style};
 
 pub mod holding_structs;
 
-pub async fn get_token(username: String, psw: String)->Result<String,reqwest::Error>{
+pub async fn get_token(username: String, psw: String)->String{
     let client = reqwest::Client::new();
     let mut map =HashMap::new();
-    map.insert("username",username);
-    map.insert("password",psw);
+    map.insert("username",username.trim());
+    map.insert("password",psw.trim());
     let res = client.post("https://beta.dicecloud.com/api/login")
         .json(&map)
         .send()
-        .await?;
-    let txt =res.text().await?;
+        .await
+        .expect("Failed to reach dicecloud");
+    let txt =res.text().await.expect("failed to get text");
     if txt.contains("error"){
-        return Ok("".to_string()); //if login fails, just pretend everything is ok
+        return String::new(); //if login fails, just pretend everything is ok
     }
-    token = sedre_json::from_str(&txt)?["token"].as_str();
-    Ok(token.to_string())
+    let js_res: Result<Value,_>= serde_json::from_str(&txt);
+    let token =js_res.expect("Failed to parse Json")["token"].as_str().unwrap().to_string();
+    token.to_string()
 }
 /// should have charcter_url=https://beta.dicecloud.com/api/creature/<creatureId>
 pub async fn get_character(token: String, character_url: String)->Value{
     let client= reqwest::Client::new();
-    let res = client.post(character_url)
-        .header("Authorization",format!("Bearer {}",token))
+    let bearer = format!("Bearer {}",token);
+    let res = client.get(character_url)
+        .header("Authorization",bearer)
         .send()
         .await
         .expect("Dicecloud failed to respond");
+    
     let txt=res.text().await.expect("Dicecloud did not respond to request properly");
     if txt.contains("'error': 'Permission denied'"){
         panic!("Permision Denied!"); //this is definitely a panic case.
@@ -39,7 +43,7 @@ pub async fn get_character(token: String, character_url: String)->Value{
     serde_json::from_str(&txt).expect("bad format")
 }
 pub fn get_char_url(caracter_id: String) -> String{
-    format!("https://beta.dicecloud.com/api/creature/{}",caracter_id)
+    format!("https://beta.dicecloud.com/api/creature/{}",caracter_id.trim())
 }
 pub fn generate_pdf()->genpdf::Document{
     let font = fonts::from_files("./Roboto","Roboto",None).expect("Failed to load font");
