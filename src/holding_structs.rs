@@ -1,6 +1,8 @@
 use serde_json::Value;
 
 use std::str::FromStr;
+
+///defines an ability score by the value(score) and name
 pub struct AbilityScore{
     score: i64,
     name: String,
@@ -19,12 +21,14 @@ impl AbilityScore{
         AbilityScore { score, name}
     }
 }
+///Types of proficiency listed
 pub enum Proficiency {
     None,
     Half,
     Profficient,
     Expert,
 }
+///A skill is a bonus, name, and prof
 pub struct Skill{
     bonus: i64,
     name: String,
@@ -41,6 +45,7 @@ impl Skill{
         Skill {bonus, name, prof_rank}
     }
 }
+///A class is a name and a level
 pub struct Class{
     name: String,
     level: i64,
@@ -56,6 +61,7 @@ impl Class{
         Class { name, level}
     }
 }
+///a background is a name and a description
 pub struct Background{
     name: String,
     description: String,
@@ -71,6 +77,7 @@ impl Background{
         Background { name, description }
     }
 }
+///a dice has a size, and we include the number
 pub struct Die{
     size: i64,
     num: i64,
@@ -89,6 +96,7 @@ impl Die{
         Die { size, num }
     }
 }
+///an attack bouns can be a regular bonus or DC
 pub enum AtkBonus{
     Bonus(i64),
     DC(i64),
@@ -109,6 +117,7 @@ impl AtkBonus{
         }
     }
 }
+///an attack is a string, AtkBonus, and damage
 pub struct Attack{
     name: String,
     bonus: AtkBonus,
@@ -131,6 +140,7 @@ impl Attack{
         Attack { name , bonus, damage }
     }
 }
+///an item has a quantity and a name
 pub struct Item{
     quantity: i64,
     name: String,
@@ -146,6 +156,7 @@ impl Item{
         Item { quantity, name}
     }
 }
+///We store all spells of the same level in the same SpellLevel struct
 pub struct SpellLevel{
     level: i64,
     spells: Vec<String>
@@ -160,9 +171,13 @@ impl SpellLevel{
     pub fn new(level: i64, spells: Vec<String>)->SpellLevel{
         SpellLevel { level, spells }
     }
+    pub fn add_spell(&mut self,String spell){
+        self.spells.push(spell);
+    }
 }
+///a spell list has spells of several levels, but with a casting class, ability, save dc, and attack bonus
 pub struct SpellList{
-    levels: Vec<SpellLevel>,
+    pub levels: Vec<SpellLevel>,
     casting_class: String,
     casting_ability: String,
     save_dc: i64,
@@ -188,13 +203,13 @@ impl SpellList{
         SpellList{levels, casting_class, casting_ability, save_dc, atk_bonus}
     }
 }
-
+///a damage multiplier has Immunity, Resistence, Vulnerability, each with a string damage type
 pub enum DamageMult{
     Immune(String),
     Resist(String),
     Vuln(String),
 }
-
+///a struct for parsing the character into
 pub struct Character{
     pub char_name: String,
     pub classes: Vec<Class>,

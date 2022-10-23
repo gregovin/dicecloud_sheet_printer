@@ -4,7 +4,7 @@ use genpdf::{elements,fonts, style};
 use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,holding_structs::*};
 use serde_json::Value;
 use tokio;
-use std::io;
+use std::{io,process};
 
 #[tokio::main]
 async fn main() {
@@ -18,20 +18,33 @@ async fn main() {
     println!("Password:");
     stdin.read_line(&mut psw).expect("Fallied to get password");
     let token =get_token(username, psw).await;
-    println!("Success! Got token.");
+    if token.len() ==0{
+        println!("Failed to login! Try accessing with no token?(y/n)");
+        let mut ans= String::new();
+        stdin.read_line(&mut ans).expect("failed to get answer");
+        if !ans.to_lowercase().contains("y"){
+            println!("Exiting to terminal");
+            process::exit(0);
+        }
+        println!("continuing");
+    } else {
+        println!("Successfully logged in");
+    }
     println!("Enter Character ID:");
     let mut char_id = String::new();
     stdin.read_line(&mut char_id).expect("Failed to get character id");
-    println!("getting character");
+    println!("getting character asycronously");
     let char_json = get_character(token,get_char_url(char_id));
-    println!("success!");
+    println!("Setting up heading");
     doc.push(
         elements::Paragraph::new("Dungeons and Dragons")
             .aligned(Alignment::Left)
-            .styled(style::Style::new().bold().with_font_size(20)),
+            .styled(style::Style::new().bold().with_font_size(18)),
     );
     let mut header = elements::TableLayout::new(vec![1,2]);
+    println!("Processing Character...");
     let character = Character::new(char_json.await);
+    println!("Setting up document...");
     header.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
     let header_left = elements::LinearLayout::vertical()
         .element(elements::Break::new(0.5))
@@ -65,7 +78,7 @@ async fn main() {
             elements::Paragraph::new("Background").styled(style::Style::new().with_font_size(10))
         )
         .element(
-            elements::Paragraph::new("").styled(style::Style::new().with_font_size(10))
+            elements::Paragraph::new("Player Name").styled(style::Style::new().with_font_size(10))
         )
         .push().expect("Invalid row");
     header_right
@@ -77,7 +90,7 @@ async fn main() {
             elements::Paragraph::new(&character.alignment)
         )
         .element(
-            elements::Paragraph::new(format!("{}",character.xp))
+            elements::Paragraph::new("")
         )
         .push().expect("Invalid row");
     header_right

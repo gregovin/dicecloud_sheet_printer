@@ -5,7 +5,7 @@ use futures::{stream, StreamExt};
 use serde_json::Value;
 use genpdf::{Element, Alignment};
 use genpdf::{elements,fonts, style};
-
+use std::process;
 pub mod holding_structs;
 
 pub async fn get_token(username: String, psw: String)->String{
@@ -37,23 +37,30 @@ pub async fn get_character(token: String, character_url: String)->Value{
         .expect("Dicecloud failed to respond");
     
     let txt=res.text().await.expect("Dicecloud did not respond to request properly");
-    if txt.contains("'error': 'Permission denied'"){
-        panic!("Permision Denied!"); //this is definitely a panic case.
+    if  txt.trim()== ""{
+        panic!("invalid response");
     }
-    serde_json::from_str(&txt).expect("bad format")
+    let out: Value =serde_json::from_str(&txt).expect("bad format");
+    if out["error"].as_str() != None{
+        println!("{}. Exiting program",out["error"].as_str().unwrap());
+        process::exit(1);
+    }
+    out
 }
 pub fn get_char_url(caracter_id: String) -> String{
     format!("https://beta.dicecloud.com/api/creature/{}",caracter_id.trim())
 }
 pub fn generate_pdf()->genpdf::Document{
+    //define the default font for the document
     let font = fonts::from_files("./Roboto","Roboto",None).expect("Failed to load font");
     let mut doc = genpdf::Document::new(font);
+    //set the title and other basic parameter
     doc.set_title("Character Sheet");
     doc.set_minimal_conformance();
     doc.set_line_spacing(1.25);
-
+    //define the margins and header(may remove header)
     let mut decorator = genpdf::SimplePageDecorator::new();
-    decorator.set_margins(10);
+    decorator.set_margins(6);
     decorator.set_header(|page| {
         let mut layout = elements::LinearLayout::vertical();
         if page>1 {
