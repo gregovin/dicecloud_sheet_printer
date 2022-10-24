@@ -1,4 +1,5 @@
 use serde_json::Value;
+use std::cmp::{PartialOrd,Ordering,Ord};
 
 use std::str::FromStr;
 
@@ -22,6 +23,7 @@ impl AbilityScore{
     }
 }
 ///Types of proficiency listed
+#[derive(Debug, Eq, PartialEq,PartialOrd,Ord)]
 pub enum Proficiency {
     None,
     Half,
@@ -29,6 +31,7 @@ pub enum Proficiency {
     Expert,
 }
 ///A skill is a bonus, name, and prof
+#[derive(Debug, Eq, PartialEq)]
 pub struct Skill{
     bonus: i64,
     name: String,
@@ -38,11 +41,30 @@ impl Skill{
     pub fn get_prof(&self)->&Proficiency{
         &self.prof_rank
     }
-    pub fn get_mod(&self,prof_bonus: i64)->i64{
+    pub fn get_mod(&self)->i64{
         self.bonus
+    }
+    pub fn get_name(&self)->&String{
+        &self.name
     }
     pub fn new(name: String, bonus: i64, prof_rank: Proficiency)->Skill{
         Skill {bonus, name, prof_rank}
+    }
+}
+impl PartialOrd for Skill{
+    fn partial_cmp(&self, other: &Skill)->Option<Ordering>{
+        if self.get_name()!=other.get_name(){
+            return self.get_name().partial_cmp(other.get_name());
+        }
+        if self.get_prof()!=other.get_prof() {
+            return self.get_prof().partial_cmp(other.get_prof());
+        }
+        self.get_mod().partial_cmp(&other.get_mod())
+    }
+}
+impl Ord for Skill{
+    fn cmp(&self, other: &Skill)->Ordering{
+        self.partial_cmp(other).unwrap()
     }
 }
 ///A class is a name and a level
@@ -413,9 +435,9 @@ impl Character{
             } else if val["tags"].as_array().unwrap().len()>0 && val["tags"].as_array().unwrap()[0].as_str()==Some("background"){
                 background=Background::new(val["name"].as_str().unwrap().to_string(),
                     val["description"].as_str().unwrap().to_string());
-            } else if val["tags"].as_array().unwrap().len()>0 && val["tags"].as_array().unwrap()[0].as_str()==Some("race"){
+            } else if val["type"].as_str()==Some("constant")&&val["name"].as_str()==Some("Race"){
                 if race==String::new(){
-                    race = val["name"].as_str().unwrap().to_string();
+                    race = val["calculation"].as_str().unwrap().to_string().replace("\"","");
                 }
             } else if Self::metaSearch(val["tags"].as_array().unwrap(),&subclass_names){
                 race = val["name"].as_str().unwrap().to_string();

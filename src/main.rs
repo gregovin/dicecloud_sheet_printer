@@ -10,6 +10,9 @@ use std::{io,process};
 #[tokio::main]
 async fn main() {
     let mut doc = generate_pdf();
+    let symbol_font = doc.add_font_family(fonts::from_files("./fonts/Noto_Sans_Symbols_2","NotoSansSymbols2",None)
+        .expect("Failed to load symbol font"));
+    let symbol = style::Style::from(symbol_font);
     let mut username = String::new();
     println!("Username:");
     let stdin= io::stdin();
@@ -38,6 +41,7 @@ async fn main() {
     let char_json = get_character(token,get_char_url(char_id));
     println!("Setting up heading");
     let mut header = elements::TableLayout::new(vec![2,15]);
+    
     header
         .row()
         .element(elements::Paragraph::new(""))
@@ -56,6 +60,15 @@ async fn main() {
         .element(elements::Paragraph::new(&character.char_name)
             .aligned(Alignment::Center)
             .framed());
+    let mut xp = String::new();
+    if character.xp>0{
+        let mut want_xp = String::new();
+        println!("Do you want to include your xp in the sheet?(y/n) Keep in mind this will make it harder to pencil it in later");
+        stdin.read_line(&mut want_xp).expect("Failed to read answer");
+        if want_xp.to_lowercase().contains("y"){
+            xp+=&character.xp.to_string();
+        }
+    }
     let mut detail_right = elements::TableLayout::new(vec![1,1,1]);
     detail_right.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
     let mut class_str = String::new();
@@ -95,7 +108,7 @@ async fn main() {
             elements::Paragraph::new(&character.alignment).styled(style::Style::new().with_line_spacing(0.5))
         )
         .element(
-            elements::Paragraph::new("").styled(style::Style::new().with_line_spacing(0.5))
+            elements::Paragraph::new(xp).styled(style::Style::new().with_line_spacing(0.5))
         )
         .push().expect("Invalid row");
     detail_right
@@ -125,139 +138,86 @@ async fn main() {
         .push()
         .expect("Invalid Table Row");
     doc.push(detail);
+    doc.push(elements::Break::new(1.0));
     let mut main_sheet = elements::TableLayout::new(vec![1,1,1]);
     let mut ability_scores: HashMap<&str,&AbilityScore> = HashMap::new();
     for score in &character.ability_scores{
         ability_scores.insert(score.get_name(),score);
     }
-    main_sheet.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
-    let stren = elements::LinearLayout::vertical()
-        .element(
-            elements::Paragraph::new("STRENGTH")
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().bold().with_font_size(7))
-        )
-        .element(
-            elements::Paragraph::new(bns_translator((*ability_scores.get("Strength")
-                .expect("No strength score! Means your char is not 5e")).get_modifier()))
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(20))
-        )
-        .element(
-            elements::Paragraph::new((*ability_scores.get("Strength").expect("")).get_score().to_string())
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(7))
-                .framed()
-        );
-
-    let dex = elements::LinearLayout::vertical()
-        .element(
-          elements::Paragraph::new("DEXTERITY")
-          .aligned(Alignment::Center)
-          .styled(style::Style::new().bold().with_font_size(7))
-        )
-        .element(
-            elements::Paragraph::new(bns_translator((*ability_scores.get("Dexterity")
-                .expect("No dexterity score! Means your char is not 5e")).get_modifier()))
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(20))
-        )
-        .element(
-            elements::Paragraph::new((*ability_scores.get("Dexterity").expect("")).get_score().to_string())
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(7))
-                .framed()
-        );
-    let con = elements::LinearLayout::vertical()
-        .element(
-            elements::Paragraph::new("CONSTITUTION")
-            .aligned(Alignment::Center)
-            .styled(style::Style::new().bold().with_font_size(7))
-        )
-        .element(
-            elements::Paragraph::new(bns_translator((*ability_scores.get("Constitution")
-                .expect("No constitution score! Means your char is not 5e")).get_modifier()))
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(20))
-        )
-        .element(
-            elements::Paragraph::new((*ability_scores.get("Constitution").expect("")).get_score().to_string())
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(7))
-                .framed()
-        );
-    let int = elements::LinearLayout::vertical()
-        .element(
-            elements::Paragraph::new("INTELLIGENCE")
-            .aligned(Alignment::Center)
-            .styled(style::Style::new().bold().with_font_size(7))
-        )
-        .element(
-            elements::Paragraph::new(bns_translator((*ability_scores.get("Intelligence")
-                .expect("No intelligence score! Means your char is not 5e")).get_modifier()))
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(20))
-        )
-        .element(
-            elements::Paragraph::new((*ability_scores.get("Intelligence").expect("")).get_score().to_string())
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(7))
-                .framed()
-        );
-    let wis = elements::LinearLayout::vertical()
-        .element(
-            elements::Paragraph::new("WISDOM")
-            .aligned(Alignment::Center)
-            .styled(style::Style::new().bold().with_font_size(7))
-        )
-        .element(
-            elements::Paragraph::new(bns_translator((*ability_scores.get("Wisdom")
-                .expect("No wisdom score! Means your char is not 5e")).get_modifier()))
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(20))
-        )
-        .element(
-            elements::Paragraph::new(format!("{}",(*ability_scores.get("Wisdom").expect("")).get_score()))
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(7))
-                .framed()
-        );
-    let chr = elements::LinearLayout::vertical()
-        .element(
-            elements::Paragraph::new("CHARISMA")
-            .aligned(Alignment::Center)
-            .styled(style::Style::new().bold().with_font_size(7))
-        )
-        .element(
-            elements::Paragraph::new(bns_translator((*ability_scores.get("Charisma")
-                .expect("No charisma score! Means your char is not 5e")).get_modifier()))
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(20))
-        )
-        .element(
-            elements::Paragraph::new(format!("{}",(*ability_scores.get("Charisma").expect("")).get_score()))
-                .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(7))
-                .framed()
-        );
+    main_sheet.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));    
     let mut left_bar = elements::TableLayout::new(vec![1,2]);
     left_bar.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
+    let mut skills = character.skills;
+    let mut saves: HashMap<&str,&Skill> = HashMap::new();
+    for save in &character.saving_throws{
+        saves.insert(save.get_name(),save);
+    }
+    let saving_throws = elements::LinearLayout::vertical()
+        .element(element_from_skill(saves.get("Strength Save").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Dexterity Save").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Constitution Save").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Intelligence Save").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Wisdom Save").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Charisma Save").unwrap(),&symbol))
+        .element(elements::Paragraph::new("SAVING THROWS")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().bold().with_font_size(7))
+        );
+    let mut skill_element = elements::LinearLayout::vertical();
+    skills.sort();
+    for skill in skills{
+        skill_element=skill_element.element(element_from_skill(&skill,&symbol));
+    }
+    skill_element=skill_element.element(
+        elements::Paragraph::new("SKILLS")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().bold().with_font_size(7))
+
+    );
+    let mut inspiration = elements::TableLayout::new(vec![2,9]);
+    inspiration.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
+    inspiration.row()
+        .element(elements::Paragraph::new(""))
+        .element(elements::Paragraph::new("INSPIRATION")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().bold().with_font_size(7))
+            .padded(2)
+        ).push().expect("Failed to add row");
+    let mut prof_bonus = elements::TableLayout::new(vec![2,9]);
+    prof_bonus.set_cell_decorator(elements::FrameCellDecorator::new(true,true,false));
+    prof_bonus.row()
+        .element(elements::Paragraph::new(character.prof_bonus.to_string()))
+        .element(elements::Paragraph::new("PROFICIENCY BONUS")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().bold().with_font_size(7))
+            .padded(2)
+    ).push().expect("Failed to add row");
     left_bar
         .row()
         .element(elements::LinearLayout::vertical()
-            .element(stren.framed())
+            .element(elements::Break::new(0.5))
+            .element(element_from_score(ability_scores.get("Strength").unwrap()).framed())
             .element(elements::Break::new(1.0))
-            .element(dex.framed())
+            .element(element_from_score(ability_scores.get("Dexterity").unwrap()).framed())
             .element(elements::Break::new(1.0))
-            .element(con.framed())
+            .element(element_from_score(ability_scores.get("Constitution").unwrap()).framed())
             .element(elements::Break::new(1.0))
-            .element(int.framed())
+            .element(element_from_score(ability_scores.get("Intelligence").unwrap()).framed())
             .element(elements::Break::new(1.0))
-            .element(wis.framed())
+            .element(element_from_score(ability_scores.get("Wisdom").unwrap()).framed())
             .element(elements::Break::new(1.0))
-            .element(chr.framed())
+            .element(element_from_score(ability_scores.get("Charisma").unwrap()).framed())
         )
-        .element(elements::Paragraph::new(""))
+        .element(elements::LinearLayout::vertical()
+            .element(inspiration)
+            .element(elements::Break::new(0.5))
+            .element(prof_bonus)
+            .element(elements::Break::new(0.5))
+            .element(saving_throws.padded(2).framed())
+            .element(elements::Break::new(0.5))
+            .element(skill_element.padded(2).framed())
+            .padded(1)
+        )
         .push().expect("failed to add row");
     main_sheet
         .row()
@@ -266,5 +226,43 @@ async fn main() {
         .element(elements::Paragraph::new(""))
         .push().expect("failed to add row");
     doc.push(main_sheet);
+    println!("Rendering pdf");
     doc.render_to_file("./character_sheet.pdf").expect("Failed to write output file");
+}
+fn element_from_score(score: &AbilityScore)->elements::LinearLayout{
+    elements::LinearLayout::vertical()
+        .element(
+            elements::Paragraph::new(score.get_name().to_uppercase())
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().bold().with_font_size(7))
+        )
+        .element(
+            elements::Paragraph::new(bns_translator(score.get_modifier()))
+                .aligned(Alignment::Center)
+                .styled(style::Style::new().with_font_size(20))
+        )
+        .element(
+            elements::Paragraph::new(score.get_score().to_string())
+                .aligned(Alignment::Center)
+                .styled(style::Style::new().with_font_size(7))
+                .framed()
+        )
+}
+fn element_from_skill(skill: &Skill, symb_fnt: &style::Style)->elements::StyledElement<elements::Paragraph>{
+    let mut bns = bns_translator(skill.get_mod());
+    if bns.bytes().count() == 2 {
+        bns=String::from(" ")+&bns;
+    }
+    elements::Paragraph::default()
+        .styled_string(format!("{}",proficiency_translator(skill.get_prof())),symb_fnt.clone())
+        .string(format!(" {} {}",bns,skill.get_name()))
+        .styled(style::Style::new().with_font_size(7))
+}
+fn proficiency_translator(prof: &Proficiency)->String{
+    match prof{
+        Proficiency::None => String::from("⭘"),
+        Proficiency::Half => String::from("◐"),
+        Proficiency::Profficient => String::from("⦿"),
+        Proficiency::Expert => String::from("❂")
+    }
 }

@@ -52,7 +52,7 @@ pub fn get_char_url(caracter_id: String) -> String{
 }
 pub fn generate_pdf()->genpdf::Document{
     //define the default font for the document
-    let font = fonts::from_files("./Roboto","Roboto",None).expect("Failed to load font");
+    let font = fonts::from_files("./fonts/Roboto","Roboto",None).expect("Failed to load main font");
     let mut doc = genpdf::Document::new(font);
     //set the title and other basic parameter
     doc.set_title("Character Sheet");
