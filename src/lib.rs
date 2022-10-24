@@ -60,7 +60,7 @@ pub fn generate_pdf()->genpdf::Document{
     doc.set_line_spacing(1.25);
     //define the margins and header(may remove header)
     let mut decorator = genpdf::SimplePageDecorator::new();
-    decorator.set_margins(6);
+    decorator.set_margins(10);
     decorator.set_header(|page| {
         let mut layout = elements::LinearLayout::vertical();
         if page>1 {
@@ -83,4 +83,10 @@ pub fn generate_pdf()->genpdf::Document{
         );
     }
     doc
+}
+pub fn bns_translator(b: i64)->String{
+    if b>=0{
+        return format!("+{}",b);
+    }
+    format!("{}",b)
 }

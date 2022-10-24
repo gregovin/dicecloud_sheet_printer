@@ -171,7 +171,7 @@ impl SpellLevel{
     pub fn new(level: i64, spells: Vec<String>)->SpellLevel{
         SpellLevel { level, spells }
     }
-    pub fn add_spell(&mut self,String spell){
+    pub fn add_spell(&mut self,spell: String){
         self.spells.push(spell);
     }
 }
