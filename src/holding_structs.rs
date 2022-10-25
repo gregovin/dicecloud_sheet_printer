@@ -245,6 +245,7 @@ pub struct Character{
     pub saving_throws: Vec<Skill>,
     pub skills: Vec<Skill>,
     pub ac: i64,
+    pub passive_bonus: i64,
     pub initiative: i64,
     pub speed: i64,
     pub hit_points: i64,
@@ -288,6 +289,7 @@ impl Character{
         let mut initiative: i64=0;
         let mut prof_bonus: i64=0;
         let mut damage_mults: Vec<DamageMult> = vec![];
+        let mut passive_bonus: i64 =0;
         let mut speed: i64=0;
         let mut hit_points: i64=0;
         let mut ac: i64=0;
@@ -338,6 +340,9 @@ impl Character{
                     };
                     skills.push(Skill::new(val["name"].as_str().unwrap().to_string(),
                         val["value"].as_i64().unwrap(),prof));
+                    if val["name"].as_str()==Some("Perception"){
+                        passive_bonus = val["passiveBonus"].as_i64().unwrap();
+                    }
                 } else {
                     other_profs.push(val["name"].as_str().unwrap().to_string());
                 }
@@ -460,6 +465,7 @@ impl Character{
             saving_throws,
             skills,
             ac,
+            passive_bonus,
             initiative,
             speed,
             hit_points,

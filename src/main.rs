@@ -159,21 +159,27 @@ async fn main() {
         .element(element_from_skill(saves.get("Intelligence Save").unwrap(),&symbol))
         .element(element_from_skill(saves.get("Wisdom Save").unwrap(),&symbol))
         .element(element_from_skill(saves.get("Charisma Save").unwrap(),&symbol))
+        .element(elements::Break::new(0.5))
         .element(elements::Paragraph::new("SAVING THROWS")
             .aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(7))
         );
     let mut skill_element = elements::LinearLayout::vertical();
+    
     skills.sort();
+    let mut passive_bonus: i64 = 10;
     for skill in skills{
         skill_element=skill_element.element(element_from_skill(&skill,&symbol));
+        if skill.get_name()=="Perception"{
+            passive_bonus+=skill.get_mod()+character.passive_bonus;
+        }
     }
-    skill_element=skill_element.element(
-        elements::Paragraph::new("SKILLS")
-            .aligned(Alignment::Center)
-            .styled(style::Style::new().bold().with_font_size(7))
-
-    );
+    skill_element=skill_element.element(elements::Break::new(0.5))
+        .element(
+            elements::Paragraph::new("SKILLS")
+                .aligned(Alignment::Center)
+                .styled(style::Style::new().bold().with_font_size(7))
+        );
     let mut inspiration = elements::TableLayout::new(vec![2,9]);
     inspiration.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
     inspiration.row()
@@ -221,9 +227,40 @@ async fn main() {
             .padded(1)
         )
         .push().expect("failed to add row");
+    let other_profs = character.other_profs.join(", ");
+    
+    let mut passive_perception = elements::TableLayout::new(vec![2,9]);
+    passive_perception.set_cell_decorator(elements::FrameCellDecorator::new(true,true,false));
+    passive_perception
+        .row()
+        .element(elements::Paragraph::new(passive_bonus.to_string())
+            .aligned(Alignment::Center))
+        .element(elements::Paragraph::new("PASSIVE PERCEPTION")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().with_font_size(7))
+            .padded(2)
+        )
+        .push().expect("Failed to add rows");
     main_sheet
         .row()
-        .element(left_bar)
+        .element(elements::LinearLayout::vertical()
+            .element(left_bar)
+            .element(elements::Break::new(0.5))
+            .element(passive_perception.padded(1))
+            .element(elements::Break::new(1.0))
+            .element(elements::LinearLayout::vertical()
+                .element(elements::Paragraph::new(other_profs)
+                    .aligned(Alignment::Center)
+                    .styled(style::Style::new().with_font_size(7))
+                    .padded(1)
+                )
+                .element(elements::Paragraph::new("OTHER PROFICIENCIES & LANGUAGES")
+                    .aligned(Alignment::Center)
+                    .styled(style::Style::new().bold().with_font_size(7)))
+                .framed()
+                .padded(1)
+            )
+        )
         .element(elements::Paragraph::new(""))
         .element(elements::Paragraph::new(""))
         .push().expect("failed to add row");
