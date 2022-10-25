@@ -112,7 +112,7 @@ impl Die{
         self.num
     }
     pub fn to_string(&self)->String{
-        format!("{}d{}",self.num,self.size).to_string()
+        format!("{}d{}",self.num,self.size)
     }
     pub fn new(size: i64,num: i64)->Die{
         Die { size, num }
