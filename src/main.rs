@@ -262,12 +262,13 @@ async fn main() {
                         .aligned(Alignment::Center)
                         .styled(style::Style::new().bold().with_font_size(7))
                 )
-                .padded(1)
-                .framed()
                 .padded(2)
+                .framed()
+                .padded(1)
         )
         .element(
             elements::LinearLayout::vertical()
+                .element(elements::Break::new(0.5))
                 .element(
                     elements::Paragraph::new(bns_translator(character.initiative))
                         .aligned(Alignment::Center)
@@ -277,12 +278,14 @@ async fn main() {
                         .aligned(Alignment::Center)
                         .styled(style::Style::new().bold().with_font_size(7))
                 )
+                .element(elements::Break::new(0.49))
                 .padded(1)
                 .framed()
                 .padded(1)
         )
         .element(
             elements::LinearLayout::vertical()
+                .element(elements::Break::new(0.5))
                 .element(
                     elements::Paragraph::new(character.speed.to_string())
                         .aligned(Alignment::Center)
@@ -292,10 +295,11 @@ async fn main() {
                         .aligned(Alignment::Center)
                         .styled(style::Style::new().bold().with_font_size(7))
                 )
+                .element(elements::Break::new(0.49))
                 .padded(1)
                 .framed()
                 .padded(1)
-        )
+            )
         .push().expect("Failed to add row");
     middle_column=middle_column.element(top_middle);
     main_sheet
@@ -337,7 +341,10 @@ async fn main() {
                 .padded(1)
             )
         )
-        .element(middle_column)
+        .element(elements::LinearLayout::vertical()
+            .element(elements::Break::new(0.25))
+            .element(middle_column)
+        )
         .element(elements::Paragraph::new(""))
         .push().expect("failed to add row");
     doc.push(main_sheet);
