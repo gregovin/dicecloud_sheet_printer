@@ -186,7 +186,8 @@ async fn main() {
     let mut prof_bonus = elements::TableLayout::new(vec![2,9]);
     prof_bonus.set_cell_decorator(elements::FrameCellDecorator::new(true,true,false));
     prof_bonus.row()
-        .element(elements::Paragraph::new(character.prof_bonus.to_string()))
+        .element(elements::Paragraph::new(bns_translator(character.prof_bonus))
+            .aligned(Alignment::Center))
         .element(elements::Paragraph::new("PROFICIENCY BONUS")
             .aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(7))
@@ -207,6 +208,7 @@ async fn main() {
             .element(element_from_score(ability_scores.get("Wisdom").unwrap()).framed())
             .element(elements::Break::new(1.0))
             .element(element_from_score(ability_scores.get("Charisma").unwrap()).framed())
+            .padded(1)
         )
         .element(elements::LinearLayout::vertical()
             .element(inspiration)
@@ -255,8 +257,8 @@ fn element_from_skill(skill: &Skill, symb_fnt: &style::Style)->elements::StyledE
     }
     elements::Paragraph::default()
         .styled_string(format!("{}",proficiency_translator(skill.get_prof())),symb_fnt.clone())
-        .string(format!(" {} {}",bns,skill.get_name()))
-        .styled(style::Style::new().with_font_size(7))
+        .string(format!(" {}  {}",bns,skill.get_name()))
+        .styled(style::Style::new().with_font_size(8))
 }
 fn proficiency_translator(prof: &Proficiency)->String{
     match prof{
