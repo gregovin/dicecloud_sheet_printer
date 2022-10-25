@@ -252,13 +252,13 @@ pub struct Character{
     pub hit_dice: Vec<Die>,
     pub attacks: Vec<Attack>,
     pub equipped: Vec<Item>,
-    pub traits: (String, String, String, String),
+    pub traits: (String, String, String, String),//Personality, Ideals, Bonds, Flaws
     pub features: Vec<String>,
-    pub other_profs: Vec<String>,
+    pub other_profs: (Vec<String>,Vec<String>,Vec<String>,Vec<String>),//armor,weapon,language, tool
     pub carried: Vec<Item>,
-    pub coins: (i64,i64,i64,i64,i64),
+    pub coins: (i64,i64,i64,i64,i64),//cp,sp,ep,gp,pp
     pub spell_lists: Vec<SpellList>,
-    pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64)
+    pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64)//1st,2nd,...9th
 }
 
 impl Character{
@@ -305,7 +305,7 @@ impl Character{
         let mut background: Background=Background::new(String::new(),String::new());
         let mut race: String = String::new();
         let mut coins = (0,0,0,0,0);
-        let mut other_profs: Vec<String> = vec![];
+        let mut other_profs: (Vec<String>,Vec<String>,Vec<String>,Vec<String>) = (vec![],vec![],vec![],vec![]);
         while props[idx] != Value::Null{
             let val = &props[idx];
             if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("ability"){
@@ -343,8 +343,14 @@ impl Character{
                     if val["name"].as_str()==Some("Perception"){
                         passive_bonus = val["passiveBonus"].as_i64().unwrap();
                     }
-                } else {
-                    other_profs.push(val["name"].as_str().unwrap().to_string());
+                } else if val["skillType"].as_str()==Some("armor"){
+                    other_profs.0.push(val["name"].as_str().unwrap().to_string());
+                } else if val["skillType"].as_str()==Some("weapon"){
+                    other_profs.1.push(val["name"].as_str().unwrap().to_string());
+                } else if val["skillType"].as_str()==Some("language"){
+                    other_profs.2.push(val["name"].as_str().unwrap().to_string());
+                } else if val["skillType"].as_str()==Some("tool"){
+                    other_profs.3.push(val["name"].as_str().unwrap().to_string());
                 }
             }else if val["type"].as_str()==Some("feature"){
                 features.push(val["name"].as_str().unwrap().to_string());

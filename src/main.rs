@@ -44,7 +44,11 @@ async fn main() {
     
     header
         .row()
-        .element(elements::Paragraph::new(""))
+        .element(elements::Image::from_path("./images/dicecloud_favicon.jpg")
+            .expect("failed to load image")
+            .with_scale(genpdf::Scale::new(2,2))
+            .with_position(genpdf::Position::new(13,1))
+            )
         .element(elements::Paragraph::new("DUNGEONS AND DRAGONS")
             .aligned(Alignment::Left)
             .styled(style::Style::new().bold().with_font_size(11)))
@@ -227,7 +231,9 @@ async fn main() {
             .padded(1)
         )
         .push().expect("failed to add row");
-    let other_profs = character.other_profs.join(", ");
+    let other_profs = (character.other_profs.0.join(", "),
+        character.other_profs.1.join(", "),character.other_profs.2.join(", "),
+        character.other_profs.3.join(", "));
     
     let mut passive_perception = elements::TableLayout::new(vec![2,9]);
     passive_perception.set_cell_decorator(elements::FrameCellDecorator::new(true,true,false));
@@ -241,6 +247,57 @@ async fn main() {
             .padded(2)
         )
         .push().expect("Failed to add rows");
+    let mut middle_column = elements::LinearLayout::vertical();
+    let mut top_middle= elements::TableLayout::new(vec![1,1,1]);
+    top_middle.set_cell_decorator(elements::FrameCellDecorator::new(false,false,false));
+    top_middle.row()
+        .element(
+            elements::LinearLayout::vertical()
+                .element(
+                    elements::Paragraph::new(character.ac.to_string())
+                        .aligned(Alignment::Center)
+                )
+                .element(
+                    elements::Paragraph::new("ARMOR CLASS")
+                        .aligned(Alignment::Center)
+                        .styled(style::Style::new().bold().with_font_size(7))
+                )
+                .padded(1)
+                .framed()
+                .padded(2)
+        )
+        .element(
+            elements::LinearLayout::vertical()
+                .element(
+                    elements::Paragraph::new(bns_translator(character.initiative))
+                        .aligned(Alignment::Center)
+                )
+                .element(
+                    elements::Paragraph::new("INITIATIVE")
+                        .aligned(Alignment::Center)
+                        .styled(style::Style::new().bold().with_font_size(7))
+                )
+                .padded(1)
+                .framed()
+                .padded(1)
+        )
+        .element(
+            elements::LinearLayout::vertical()
+                .element(
+                    elements::Paragraph::new(character.speed.to_string())
+                        .aligned(Alignment::Center)
+                )
+                .element(
+                    elements::Paragraph::new("SPEED")
+                        .aligned(Alignment::Center)
+                        .styled(style::Style::new().bold().with_font_size(7))
+                )
+                .padded(1)
+                .framed()
+                .padded(1)
+        )
+        .push().expect("Failed to add row");
+    middle_column=middle_column.element(top_middle);
     main_sheet
         .row()
         .element(elements::LinearLayout::vertical()
@@ -249,9 +306,28 @@ async fn main() {
             .element(passive_perception.padded(1))
             .element(elements::Break::new(1.0))
             .element(elements::LinearLayout::vertical()
-                .element(elements::Paragraph::new(other_profs)
+                .element(elements::Paragraph::default()
+                    .styled_string("Armor: ",style::Style::new().bold().with_font_size(7))
+                    .styled_string(other_profs.0,style::Style::new().with_font_size(7))
                     .aligned(Alignment::Center)
-                    .styled(style::Style::new().with_font_size(7))
+                    .padded(1)
+                )
+                .element(elements::Paragraph::default()
+                    .styled_string("Weapons: ",style::Style::new().bold().with_font_size(7))
+                    .styled_string(other_profs.1,style::Style::new().with_font_size(7))
+                    .aligned(Alignment::Center)
+                    .padded(1)
+                )
+                .element(elements::Paragraph::default()
+                    .styled_string("Languages: ",style::Style::new().bold().with_font_size(7))
+                    .styled_string(other_profs.2,style::Style::new().with_font_size(7))
+                    .aligned(Alignment::Center)
+                    .padded(1)
+                )
+                .element(elements::Paragraph::default()
+                    .styled_string("Tools: ",style::Style::new().bold().with_font_size(7))
+                    .styled_string(other_profs.3,style::Style::new().with_font_size(7))
+                    .aligned(Alignment::Center)
                     .padded(1)
                 )
                 .element(elements::Paragraph::new("OTHER PROFICIENCIES & LANGUAGES")
@@ -261,11 +337,11 @@ async fn main() {
                 .padded(1)
             )
         )
-        .element(elements::Paragraph::new(""))
+        .element(middle_column)
         .element(elements::Paragraph::new(""))
         .push().expect("failed to add row");
     doc.push(main_sheet);
-    println!("Rendering pdf");
+    println!("Rendering pdf...(this may take a moment)");
     doc.render_to_file("./character_sheet.pdf").expect("Failed to write output file");
 }
 fn element_from_score(score: &AbilityScore)->elements::LinearLayout{
