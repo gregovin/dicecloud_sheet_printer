@@ -1,6 +1,7 @@
 use std::env;
+use std::hash::Hash;
 use genpdf::{Element, Alignment};
-use genpdf::{elements,fonts, style};
+use genpdf::{elements::{self,Paragraph},fonts, style};
 use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,bns_translator,holding_structs::*};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -49,7 +50,7 @@ async fn main() {
             .with_scale(genpdf::Scale::new(2,2))
             .with_position(genpdf::Position::new(13,1))
             )
-        .element(elements::Paragraph::new("DUNGEONS AND DRAGONS")
+        .element(Paragraph::new("DUNGEONS AND DRAGONS")
             .aligned(Alignment::Left)
             .styled(style::Style::new().bold().with_font_size(11)))
         .push().expect("Invalid row");
@@ -61,7 +62,7 @@ async fn main() {
     detail.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
     let detail_left = elements::LinearLayout::vertical()
         .element(elements::Break::new(1.0))
-        .element(elements::Paragraph::new(&character.char_name)
+        .element(Paragraph::new(&character.char_name)
             .aligned(Alignment::Center)
             .framed());
     let mut xp = String::new();
@@ -82,51 +83,51 @@ async fn main() {
     detail_right
         .row()
         .element(
-            elements::Paragraph::new(class_str).styled(style::Style::new().with_line_spacing(0.5))
+            Paragraph::new(class_str).styled(style::Style::new().with_line_spacing(0.5))
         )
         .element(
-            elements::Paragraph::new(character.background.get_name()).styled(style::Style::new().with_line_spacing(0.5))
+            Paragraph::new(character.background.get_name()).styled(style::Style::new().with_line_spacing(0.5))
         )
         .element(
-            elements::Paragraph::new("").styled(style::Style::new().with_line_spacing(0.5))
-        )
-        .push().expect("Invalid row");
-    detail_right
-        .row()
-        .element(
-            elements::Paragraph::new("Class").styled(style::Style::new().with_font_size(7))
-        )
-        .element(
-            elements::Paragraph::new("Background").styled(style::Style::new().with_font_size(7))
-        )
-        .element(
-            elements::Paragraph::new("Player Name").styled(style::Style::new().with_font_size(7))
+            Paragraph::new("").styled(style::Style::new().with_line_spacing(0.5))
         )
         .push().expect("Invalid row");
     detail_right
         .row()
         .element(
-            elements::Paragraph::new(&character.race).styled(style::Style::new().with_line_spacing(0.5))
+            Paragraph::new("Class").styled(style::Style::new().with_font_size(7))
         )
         .element(
-            elements::Paragraph::new(&character.alignment).styled(style::Style::new().with_line_spacing(0.5))
+            Paragraph::new("Background").styled(style::Style::new().with_font_size(7))
         )
         .element(
-            elements::Paragraph::new(xp).styled(style::Style::new().with_line_spacing(0.5))
+            Paragraph::new("Player Name").styled(style::Style::new().with_font_size(7))
         )
         .push().expect("Invalid row");
     detail_right
         .row()
         .element(
-            elements::Paragraph::new("Race")
+            Paragraph::new(&character.race).styled(style::Style::new().with_line_spacing(0.5))
+        )
+        .element(
+            Paragraph::new(&character.alignment).styled(style::Style::new().with_line_spacing(0.5))
+        )
+        .element(
+            Paragraph::new(xp).styled(style::Style::new().with_line_spacing(0.5))
+        )
+        .push().expect("Invalid row");
+    detail_right
+        .row()
+        .element(
+            Paragraph::new("Race")
                 .styled(style::Style::new().with_font_size(7))
         )
         .element(
-            elements::Paragraph::new("Alignment")
+            Paragraph::new("Alignment")
                 .styled(style::Style::new().with_font_size(7))
         )
         .element(
-            elements::Paragraph::new("Experience Points")
+            Paragraph::new("Experience Points")
                 .styled(style::Style::new().with_font_size(7))
         )
         .push().expect("Invalid row");
@@ -164,7 +165,7 @@ async fn main() {
         .element(element_from_skill(saves.get("Wisdom Save").unwrap(),&symbol))
         .element(element_from_skill(saves.get("Charisma Save").unwrap(),&symbol))
         .element(elements::Break::new(0.5))
-        .element(elements::Paragraph::new("SAVING THROWS")
+        .element(Paragraph::new("SAVING THROWS")
             .aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(7))
         );
@@ -180,15 +181,15 @@ async fn main() {
     }
     skill_element=skill_element.element(elements::Break::new(0.5))
         .element(
-            elements::Paragraph::new("SKILLS")
+            Paragraph::new("SKILLS")
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().bold().with_font_size(8))
         );
     let mut inspiration = elements::TableLayout::new(vec![2,9]);
     inspiration.set_cell_decorator(elements::FrameCellDecorator::new(true, true, false));
     inspiration.row()
-        .element(elements::Paragraph::new(""))
-        .element(elements::Paragraph::new("INSPIRATION")
+        .element(Paragraph::new(""))
+        .element(Paragraph::new("INSPIRATION")
             .aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(7))
             .padded(2)
@@ -196,9 +197,9 @@ async fn main() {
     let mut prof_bonus = elements::TableLayout::new(vec![2,9]);
     prof_bonus.set_cell_decorator(elements::FrameCellDecorator::new(true,true,false));
     prof_bonus.row()
-        .element(elements::Paragraph::new(bns_translator(character.prof_bonus))
+        .element(Paragraph::new(bns_translator(character.prof_bonus))
             .aligned(Alignment::Center))
-        .element(elements::Paragraph::new("PROFICIENCY BONUS")
+        .element(Paragraph::new("PROFICIENCY BONUS")
             .aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(7))
             .padded(2)
@@ -239,9 +240,9 @@ async fn main() {
     passive_perception.set_cell_decorator(elements::FrameCellDecorator::new(true,true,false));
     passive_perception
         .row()
-        .element(elements::Paragraph::new(passive_bonus.to_string())
+        .element(Paragraph::new(passive_bonus.to_string())
             .aligned(Alignment::Center))
-        .element(elements::Paragraph::new("PASSIVE PERCEPTION")
+        .element(Paragraph::new("PASSIVE PERCEPTION")
             .aligned(Alignment::Center)
             .styled(style::Style::new().with_font_size(7))
             .padded(2)
@@ -254,11 +255,11 @@ async fn main() {
         .element(
             elements::LinearLayout::vertical()
                 .element(
-                    elements::Paragraph::new(character.ac.to_string())
+                    Paragraph::new(character.ac.to_string())
                         .aligned(Alignment::Center)
                 )
                 .element(
-                    elements::Paragraph::new("ARMOR CLASS")
+                    Paragraph::new("ARMOR CLASS")
                         .aligned(Alignment::Center)
                         .styled(style::Style::new().bold().with_font_size(7))
                 )
@@ -270,11 +271,11 @@ async fn main() {
             elements::LinearLayout::vertical()
                 .element(elements::Break::new(0.5))
                 .element(
-                    elements::Paragraph::new(bns_translator(character.initiative))
+                    Paragraph::new(bns_translator(character.initiative))
                         .aligned(Alignment::Center)
                 )
                 .element(
-                    elements::Paragraph::new("INITIATIVE")
+                    Paragraph::new("INITIATIVE")
                         .aligned(Alignment::Center)
                         .styled(style::Style::new().bold().with_font_size(7))
                 )
@@ -287,11 +288,11 @@ async fn main() {
             elements::LinearLayout::vertical()
                 .element(elements::Break::new(0.5))
                 .element(
-                    elements::Paragraph::new(character.speed.to_string())
+                    Paragraph::new(character.speed.to_string())
                         .aligned(Alignment::Center)
                 )
                 .element(
-                    elements::Paragraph::new("SPEED")
+                    Paragraph::new("SPEED")
                         .aligned(Alignment::Center)
                         .styled(style::Style::new().bold().with_font_size(7))
                 )
@@ -303,12 +304,12 @@ async fn main() {
         .push().expect("Failed to add row");
     middle_column=middle_column.element(top_middle);
     let hit_point_detail=elements::LinearLayout::vertical()
-            .element(elements::Paragraph::new(format!("Hit Point Maximum: {}",character.hit_points))
+            .element(Paragraph::new(format!("Hit Point Maximum: {}",character.hit_points))
                 .styled(style::Style::new().with_font_size(7))
                 .padded(2)
                 .framed())
             .element(elements::Break::new(2.25))
-            .element(elements::Paragraph::new("CURRENT HIT POINTS")
+            .element(Paragraph::new("CURRENT HIT POINTS")
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().bold().with_font_size(7)));
     middle_column=middle_column.element(elements::Break::new(0.25))
@@ -316,7 +317,7 @@ async fn main() {
             .element(elements::Break::new(0.1))
             .element(elements::LinearLayout::vertical()
                 .element(elements::Break::new(2.25))
-                .element(elements::Paragraph::new("TEMPORARY HIT POINTS")
+                .element(Paragraph::new("TEMPORARY HIT POINTS")
                     .aligned(Alignment::Center)
                     .styled(style::Style::new().bold().with_font_size(7))
                 )
@@ -329,11 +330,11 @@ async fn main() {
     let hd_str: String = character.hit_dice.iter().map(|die| die.to_string()).collect::<Vec<_>>().join(", ");
     mid_tbl.row()
         .element(elements::LinearLayout::vertical()
-            .element(elements::Paragraph::new(format!("Total: {}",hd_str))
+            .element(Paragraph::new(format!("Total: {}",hd_str))
                 .styled(style::Style::new().with_font_size(7))
             )
             .element(elements::Break::new(1))
-            .element(elements::Paragraph::new("HIT DICE")
+            .element(Paragraph::new("HIT DICE")
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(7))
             )
@@ -342,33 +343,105 @@ async fn main() {
             .padded(1)
         )
         .element(elements::LinearLayout::vertical()
-            .element(elements::Paragraph::default()
+            .element(Paragraph::default()
                 .styled_string("SUCCESSES ",style::Style::new().with_font_size(7))
                 .styled_string("⭘",symbol.clone().with_font_size(7))
                 .styled_string("-",style::Style::new().with_font_size(7))
                 .styled_string("⭘",symbol.clone().with_font_size(7))
                 .styled_string("-",style::Style::new().with_font_size(7))
-                .styled_string("⭘",symbol.clone().with_font_size(7))
+                .styled_string("⭘ ",symbol.clone().with_font_size(7))
                 .aligned(Alignment::Right)
             )
-            .element(elements::Paragraph::default()
+            .element(Paragraph::default()
                 .styled_string("FAILURES ",style::Style::new().with_font_size(7))
                 .styled_string("⭘",symbol.clone().with_font_size(7))
                 .styled_string("-",style::Style::new().with_font_size(7))
                 .styled_string("⭘",symbol.clone().with_font_size(7))
                 .styled_string("-",style::Style::new().with_font_size(7))
-                .styled_string("⭘",symbol.clone().with_font_size(7))
+                .styled_string("⭘ ",symbol.clone().with_font_size(7))
                 .aligned(Alignment::Right)
             )
-            .element(elements::Paragraph::new("DEATH SAVES")
+            .element(Paragraph::new("DEATH SAVES")
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(7)))
-            .padded(1)
             .framed()
             .padded(1)
         )
         .push().expect("Invalid Row");
     middle_column=middle_column.element(mid_tbl);
+    let atks = character.attacks;
+    let mut atk_dict: HashMap<String,Attack> = HashMap::new();
+    for atk in atks{
+        atk_dict.insert(atk.get_name().clone(),atk);
+    }
+    let mut to_display: Vec<Attack>=vec![];
+    if atk_dict.len()>3{
+        println!("You have more attacks than you have space for! Select up to 3 attacks");
+        println!("Type \"list\" to list all attacks, \"selection\" to show selection, \"instructions\" to print this again, \"remove <name>\" to remove an attack by name, \"add <name>\" to add an attack by name, or \"done\" to finish selection");
+        let mut done: bool=false;
+        while !done{
+            let mut current_inst: String=String::new();
+            stdin.read_line(&mut current_inst).expect("failed to read line");
+            if &current_inst.trim().to_lowercase()=="list"{
+                println!("{}",atk_dict.iter().map(|atk| atk.1.get_name().clone()).collect::<Vec<_>>().join(", "));
+            } else if &current_inst.trim().to_lowercase()=="selection"{
+                println!("{} ({}/3)",to_display.iter().map(|atk| atk.get_name().clone()).collect::<Vec<_>>().join(", "),to_display.len());
+            } else if &current_inst.trim().to_lowercase()=="instructions"{
+                println!("Type \"list\" to list all attacks, \"selection\" to show selection, \"instructions\" to print this again, \"remove <name>\" to remove an attack by name, \"add <name>\" to add an attack by name, or \"done\" to finish selection");
+            } else if current_inst.trim().to_lowercase().contains("remove"){
+                let atk_name = current_inst.replace("remove ","").trim().to_string();
+                match atk_dict.get(&atk_name) {
+                    Some(atk)=>{to_display.retain(|x| x !=atk);println!("Removed attack");},
+                    None=>println!("Attack does not exist"),
+                };
+            } else if current_inst.trim().to_lowercase().contains("add"){
+                let atk_name = current_inst.replace("add ","").trim().to_string();
+                if atk_dict.contains_key(&atk_name){
+                    if to_display.len() < 3{
+                        to_display.push(atk_dict.get(&atk_name).unwrap().clone());
+                        println!("Added attack");
+                    } else {
+                        println!("You allready have too many attacks!");
+                    }
+                } else {
+                    println!("Specified attack does not exist");
+                }
+            } else if &current_inst.trim().to_lowercase()=="done"{
+                done = true;
+            } else{
+                println!("Invalid instruction. Type instructions to see all options");
+            }
+        }
+    } else {
+        for atk in atk_dict.iter(){
+            to_display.push(atk.1.clone())
+        }
+    }
+    let mut attack_display=elements::TableLayout::new(vec![2,1,2]);
+    attack_display.row()
+        .element(Paragraph::new("NAME").styled(style::Style::new().with_font_size(7)))
+        .element(Paragraph::new("ATK BONUS").styled(style::Style::new().with_font_size(7)))
+        .element(Paragraph::new("DAMAGE/TYPE").styled(style::Style::new().with_font_size(7)))
+        .push().expect("failed to add row");
+    for atk in to_display{
+        let mut nme = atk.get_name().to_string();
+        nme.truncate(10);
+        attack_display.row()
+            .element(Paragraph::new(nme)
+                .styled(style::Style::new().with_font_size(7))
+                )
+            .element(
+                Paragraph::new(atk.get_bonus_as_string())
+                .aligned(Alignment::Center)
+                .styled(style::Style::new().with_font_size(7))
+            )
+            .element(
+                Paragraph::new(atk.get_damage())
+                .styled(style::Style::new().with_font_size(7))
+            )
+            .push().expect("failed to add row");
+    }
+    middle_column=middle_column.element(attack_display.padded(1).framed().padded(1));
     main_sheet
         .row()
         .element(elements::LinearLayout::vertical()
@@ -377,31 +450,31 @@ async fn main() {
             .element(passive_perception.padded(1))
             .element(elements::Break::new(1.0))
             .element(elements::LinearLayout::vertical()
-                .element(elements::Paragraph::default()
+                .element(Paragraph::default()
                     .styled_string("Armor: ",style::Style::new().bold().with_font_size(7))
                     .styled_string(other_profs.0,style::Style::new().with_font_size(7))
                     .aligned(Alignment::Center)
                     .padded(1)
                 )
-                .element(elements::Paragraph::default()
+                .element(Paragraph::default()
                     .styled_string("Weapons: ",style::Style::new().bold().with_font_size(7))
                     .styled_string(other_profs.1,style::Style::new().with_font_size(7))
                     .aligned(Alignment::Center)
                     .padded(1)
                 )
-                .element(elements::Paragraph::default()
+                .element(Paragraph::default()
                     .styled_string("Languages: ",style::Style::new().bold().with_font_size(7))
                     .styled_string(other_profs.2,style::Style::new().with_font_size(7))
                     .aligned(Alignment::Center)
                     .padded(1)
                 )
-                .element(elements::Paragraph::default()
+                .element(Paragraph::default()
                     .styled_string("Tools: ",style::Style::new().bold().with_font_size(7))
                     .styled_string(other_profs.3,style::Style::new().with_font_size(7))
                     .aligned(Alignment::Center)
                     .padded(1)
                 )
-                .element(elements::Paragraph::new("OTHER PROFICIENCIES & LANGUAGES")
+                .element(Paragraph::new("OTHER PROFICIENCIES & LANGUAGES")
                     .aligned(Alignment::Center)
                     .styled(style::Style::new().bold().with_font_size(7)))
                 .framed()
@@ -412,7 +485,7 @@ async fn main() {
             .element(elements::Break::new(0.25))
             .element(middle_column)
         )
-        .element(elements::Paragraph::new(""))
+        .element(Paragraph::new(""))
         .push().expect("failed to add row");
     doc.push(main_sheet);
     println!("Rendering pdf...(this may take a moment)");
@@ -421,28 +494,28 @@ async fn main() {
 fn element_from_score(score: &AbilityScore)->elements::LinearLayout{
     elements::LinearLayout::vertical()
         .element(
-            elements::Paragraph::new(score.get_name().to_uppercase())
+            Paragraph::new(score.get_name().to_uppercase())
             .aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(7))
         )
         .element(
-            elements::Paragraph::new(bns_translator(score.get_modifier()))
+            Paragraph::new(bns_translator(score.get_modifier()))
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(20))
         )
         .element(
-            elements::Paragraph::new(score.get_score().to_string())
+            Paragraph::new(score.get_score().to_string())
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(7))
                 .framed()
         )
 }
-fn element_from_skill(skill: &Skill, symb_fnt: &style::Style)->elements::StyledElement<elements::Paragraph>{
+fn element_from_skill(skill: &Skill, symb_fnt: &style::Style)->elements::StyledElement<Paragraph>{
     let mut bns = bns_translator(skill.get_mod());
     if bns.bytes().count() == 2 {
         bns=String::from(" ")+&bns;
     }
-    elements::Paragraph::default()
+    Paragraph::default()
         .styled_string(format!("{}",proficiency_translator(skill.get_prof())),symb_fnt.clone())
         .string(format!(" {}  {}",bns,skill.get_name()))
         .styled(style::Style::new().with_font_size(8))

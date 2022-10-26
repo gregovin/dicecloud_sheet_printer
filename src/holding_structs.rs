@@ -119,6 +119,7 @@ impl Die{
     }
 }
 ///an attack bouns can be a regular bonus or DC
+#[derive(Debug, Eq, PartialEq,Clone)]
 pub enum AtkBonus{
     Bonus(i64),
     DC(i64),
@@ -140,6 +141,7 @@ impl AtkBonus{
     }
 }
 ///an attack is a string, AtkBonus, and damage
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Attack{
     name: String,
     bonus: AtkBonus,
@@ -390,19 +392,19 @@ impl Character{
                 let mut delta = 1;
                 let mut damage = String::new();
                 let mut dmg_die= String::new();
-                let mut dmg_type= String::new();
                 let mut dmg_bonus: i64=0;
                 while props[idx+delta]["parent"]["id"].as_str()==id{
-                    let valNxt = &props[idx+1];
-                    if valNxt["type"].as_str()==Some("damage"){
-                        dmg_die = valNxt["amount"]["value"].as_str().unwrap().to_string();
-                        dmg_type = valNxt["damageType"].as_str().unwrap().to_string();
-                        dmg_bonus = match valNxt["effects"][0]["amount"]["value"].as_i64(){
+                    let val_nxt = &props[idx+delta];
+                    let mut dmg_type= String::new();
+                    if val_nxt["type"].as_str()==Some("damage"){
+                        dmg_die = val_nxt["amount"]["value"].as_str().unwrap().to_string();
+                        dmg_type = val_nxt["damageType"].as_str().unwrap().to_string();
+                        dmg_bonus = match val_nxt["amount"]["effects"][0]["amount"]["value"].as_i64(){
                             Some(k)=>k,
                             None=>0
                         };
                     }
-                    damage += &format!("{}+{}[{}]",dmg_die,dmg_bonus,dmg_type);
+                    damage += &format!("{}+{}[{}]",dmg_die,dmg_bonus,damage_type_abreviator(dmg_type));
                     delta +=1;
                 }
                 attacks.push(Attack::new(val["name"].as_str().unwrap().to_string(),
@@ -487,4 +489,14 @@ impl Character{
             spell_slots: (0,0,0,0,0,0,0,0,0)
         }
     }
+}
+fn damage_type_abreviator(typ: String)->String{
+    if typ.len()<5{
+        return typ;
+    }else if &typ == "piercing"{
+        return "pir.".to_string();
+    }
+    let mut typ_bits=typ.into_bytes();
+    typ_bits.truncate(3);
+    return String::from_utf8(typ_bits).expect("should never happen by design")+".";
 }
