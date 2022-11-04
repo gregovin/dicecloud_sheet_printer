@@ -375,7 +375,7 @@ async fn main() {
         atk_dict.insert(atk.get_name().clone(),atk);
     }
     let mut to_display: Vec<Attack>=vec![];
-    if atk_dict.len()>11{
+    if atk_dict.len()>24{
         println!("You have more attacks than you have space for! Select up to 3 attacks");
         println!("Type \"list\" to list all attacks, \"selection\" to show selection, \"instructions\" to print this again, \"remove <name>\" to remove an attack by name, \"add <name>\" to add an attack by name, or \"done\" to finish selection");
         let mut done: bool=false;
@@ -397,7 +397,7 @@ async fn main() {
             } else if current_inst.trim().to_lowercase().contains("add"){
                 let atk_name = current_inst.replace("add ","").trim().to_string();
                 if atk_dict.contains_key(&atk_name){
-                    if to_display.len() < 3{
+                    if to_display.len() < 23{
                         to_display.push(atk_dict.get(&atk_name).unwrap().clone());
                         println!("Added attack ({}/3)",to_display.len());
                     } else {
@@ -444,8 +444,8 @@ async fn main() {
             )
             .push().expect("failed to add row");
     }
-    if num_atks<11{
-        let needed=11-num_atks;
+    if num_atks<23{
+        let needed=23-num_atks;
         for _ in 0..needed{
             attack_display.row()
                 .element(Paragraph::new("")
