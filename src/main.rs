@@ -375,7 +375,7 @@ async fn main() {
         atk_dict.insert(atk.get_name().clone(),atk);
     }
     let mut to_display: Vec<Attack>=vec![];
-    if atk_dict.len()>3{
+    if atk_dict.len()>11{
         println!("You have more attacks than you have space for! Select up to 3 attacks");
         println!("Type \"list\" to list all attacks, \"selection\" to show selection, \"instructions\" to print this again, \"remove <name>\" to remove an attack by name, \"add <name>\" to add an attack by name, or \"done\" to finish selection");
         let mut done: bool=false;
@@ -399,7 +399,7 @@ async fn main() {
                 if atk_dict.contains_key(&atk_name){
                     if to_display.len() < 3{
                         to_display.push(atk_dict.get(&atk_name).unwrap().clone());
-                        println!("Added attack");
+                        println!("Added attack ({}/3)",to_display.len());
                     } else {
                         println!("You allready have too many attacks!");
                     }
@@ -409,14 +409,16 @@ async fn main() {
             } else if &current_inst.trim().to_lowercase()=="done"{
                 done = true;
             } else{
-                println!("Invalid instruction. Type instructions to see all options");
+                println!("Invalid instruction. Type \"instructions\" to see all options");
             }
         }
     } else {
         for atk in atk_dict.iter(){
-            to_display.push(atk.1.clone())
+            to_display.push(atk.1.clone());
         }
     }
+    let num_atks = to_display.len();
+    to_display.sort();
     let mut attack_display=elements::TableLayout::new(vec![2,1,2]);
     attack_display.row()
         .element(Paragraph::new("NAME").styled(style::Style::new().with_font_size(7)))
@@ -424,24 +426,45 @@ async fn main() {
         .element(Paragraph::new("DAMAGE/TYPE").styled(style::Style::new().with_font_size(7)))
         .push().expect("failed to add row");
     for atk in to_display{
-        let mut nme = atk.get_name().to_string();
-        nme.truncate(10);
+        let nme = atk.get_name().to_string();
+        let mut trunk = nme.replace(" (Two-Handed)","(2H)");
+        trunk.truncate(13);
         attack_display.row()
-            .element(Paragraph::new(nme)
-                .styled(style::Style::new().with_font_size(7))
+            .element(Paragraph::new(trunk)
+                .styled(style::Style::new().bold().with_font_size(10))
                 )
             .element(
                 Paragraph::new(atk.get_bonus_as_string())
                 .aligned(Alignment::Center)
-                .styled(style::Style::new().with_font_size(7))
+                .styled(style::Style::new().with_font_size(10))
             )
             .element(
                 Paragraph::new(atk.get_damage())
-                .styled(style::Style::new().with_font_size(7))
+                .styled(style::Style::new().with_font_size(10))
             )
             .push().expect("failed to add row");
     }
+    if num_atks<11{
+        let needed=11-num_atks;
+        for _ in 0..needed{
+            attack_display.row()
+                .element(Paragraph::new("")
+                    .styled(style::Style::new().bold().with_font_size(10))
+                )
+                .element(
+                    Paragraph::new("")
+                    .aligned(Alignment::Center)
+                    .styled(style::Style::new().with_font_size(10))
+                )
+                .element(
+                    Paragraph::new("")
+                    .styled(style::Style::new().with_font_size(10))
+                )
+            .push().expect("failed to add row");
+        }
+    }
     middle_column=middle_column.element(attack_display.padded(1).framed().padded(1));
+    let mut equipment = elements::TableLayout::new(vec![2,5]);
     main_sheet
         .row()
         .element(elements::LinearLayout::vertical()

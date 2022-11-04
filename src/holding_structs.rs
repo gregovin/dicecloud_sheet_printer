@@ -2,6 +2,7 @@ use serde_json::Value;
 use std::cmp::{PartialOrd,Ordering,Ord};
 
 use std::str::FromStr;
+use std::collections::HashMap;
 
 ///defines an ability score by the value(score) and name
 pub struct AbilityScore{
@@ -119,7 +120,7 @@ impl Die{
     }
 }
 ///an attack bouns can be a regular bonus or DC
-#[derive(Debug, Eq, PartialEq,Clone)]
+#[derive(Debug, Eq, PartialEq,Clone,PartialOrd,Ord)]
 pub enum AtkBonus{
     Bonus(i64),
     DC(i64),
@@ -141,7 +142,7 @@ impl AtkBonus{
     }
 }
 ///an attack is a string, AtkBonus, and damage
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone,PartialOrd,Ord)]
 pub struct Attack{
     name: String,
     bonus: AtkBonus,
@@ -162,6 +163,14 @@ impl Attack{
     }
     pub fn new(name: String,bonus: AtkBonus,damage: String)->Attack{
         Attack { name , bonus, damage }
+    }
+    pub fn add_dmg(&mut self, dmg: String){
+        if self.damage.len()>0{
+            self.damage+=&format!(", {}",dmg);
+        }
+        else{
+            self.damage=dmg;
+        }
     }
 }
 ///an item has a quantity and a name
@@ -296,7 +305,8 @@ impl Character{
         let mut hit_points: i64=0;
         let mut ac: i64=0;
         let mut traits = (String::new(),String::new(),String::new(),String::new());
-        let mut attacks: Vec<Attack> =vec![];
+        let mut attacks_dict: HashMap<String,Attack> =HashMap::new();
+        let mut attacks: Vec<Attack>=vec![];
         let mut classes: Vec<Class> = vec![];
         let props: &Value = &char_json["creatureProperties"];
         let mut features: Vec<String> = vec![];
@@ -388,28 +398,26 @@ impl Character{
                 }
             }else if val["type"].as_str()==Some("action") && val["actionType"].as_str()==Some("attack"){
                 let bns = AtkBonus::Bonus(val["attackRoll"]["value"].as_i64().unwrap());
-                let id = val["_id"].as_str();
-                let mut delta = 1;
-                let mut damage = String::new();
-                let mut dmg_die= String::new();
-                let mut dmg_bonus: i64=0;
-                while props[idx+delta]["parent"]["id"].as_str()==id{
-                    let val_nxt = &props[idx+delta];
-                    let mut dmg_type= String::new();
-                    if val_nxt["type"].as_str()==Some("damage"){
-                        dmg_die = val_nxt["amount"]["value"].as_str().unwrap().to_string();
-                        dmg_type = val_nxt["damageType"].as_str().unwrap().to_string();
-                        dmg_bonus = match val_nxt["amount"]["effects"][0]["amount"]["value"].as_i64(){
-                            Some(k)=>k,
-                            None=>0
-                        };
-                    }
-                    damage += &format!("{}+{}[{}]",dmg_die,dmg_bonus,damage_type_abreviator(dmg_type));
-                    delta +=1;
-                }
-                attacks.push(Attack::new(val["name"].as_str().unwrap().to_string(),
-                    bns,damage));
-
+                let id = val["_id"].as_str().unwrap().to_string();
+                let dmg = match attacks_dict.get(&id){
+                    Some(atk)=>atk.get_damage(),
+                    None=>""
+                };
+                attacks_dict.insert(id,Attack::new(val["name"].as_str().unwrap().to_string(),bns,dmg.to_string()));
+            }else if val["type"].as_str()==Some("damage"){
+                let par_id = val["parent"]["id"].as_str().unwrap().to_string();
+                let dmg_die = val["amount"]["calculation"].as_str().unwrap();
+                let dmg_bonus = match val["amount"]["effects"][0]["amount"]["value"].as_i64(){
+                    Some(k)=>k,
+                    None=>0,
+                };
+                let dmg_type = val["damageType"].as_str().unwrap().to_string();
+                let dmg_string = format!("{}{}{}[{}]",dmg_die,if dmg_bonus>=0 {"+"} else {""},
+                dmg_bonus,damage_type_abreviator(dmg_type));
+                match attacks_dict.get_mut(&par_id){
+                    Some(atk)=>atk.add_dmg(dmg_string),
+                    None=>{attacks_dict.insert(par_id,Attack::new(String::new(),AtkBonus::Bonus(0),dmg_string));},
+                };
             }else if val["type"].as_str()==Some("class"){
                 classes.push(Class::new(val["name"].as_str().unwrap().to_string(),
                     val["level"].as_i64().unwrap()));
@@ -459,6 +467,9 @@ impl Character{
             if idx % 100 == 0{
                 println!("Proccessed {} properties",idx);
             }
+        }
+        for pair in attacks_dict.iter(){
+            attacks.push(pair.1.clone());
         }
         Character{
             char_name,
