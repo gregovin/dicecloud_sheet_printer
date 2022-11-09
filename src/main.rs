@@ -375,8 +375,9 @@ async fn main() {
         atk_dict.insert(atk.get_name().clone(),atk);
     }
     let mut to_display: Vec<Attack>=vec![];
+    //needs to be rethought
     if atk_dict.len()>24{
-        println!("You have more attacks than you have space for! Select up to 3 attacks");
+        println!("You have more attacks than you have space for! Select up to 23 attacks");
         println!("Type \"list\" to list all attacks, \"selection\" to show selection, \"instructions\" to print this again, \"remove <name>\" to remove an attack by name, \"add <name>\" to add an attack by name, or \"done\" to finish selection");
         let mut done: bool=false;
         while !done{
@@ -385,7 +386,7 @@ async fn main() {
             if &current_inst.trim().to_lowercase()=="list"{
                 println!("{}",atk_dict.iter().map(|atk| atk.1.get_name().clone()).collect::<Vec<_>>().join(", "));
             } else if &current_inst.trim().to_lowercase()=="selection"{
-                println!("{} ({}/3)",to_display.iter().map(|atk| atk.get_name().clone()).collect::<Vec<_>>().join(", "),to_display.len());
+                println!("{} ({}/23)",to_display.iter().map(|atk| atk.get_name().clone()).collect::<Vec<_>>().join(", "),to_display.len());
             } else if &current_inst.trim().to_lowercase()=="instructions"{
                 println!("Type \"list\" to list all attacks, \"selection\" to show selection, \"instructions\" to print this again, \"remove <name>\" to remove an attack by name, \"add <name>\" to add an attack by name, or \"done\" to finish selection");
             } else if current_inst.trim().to_lowercase().contains("remove"){
@@ -399,7 +400,7 @@ async fn main() {
                 if atk_dict.contains_key(&atk_name){
                     if to_display.len() < 23{
                         to_display.push(atk_dict.get(&atk_name).unwrap().clone());
-                        println!("Added attack ({}/3)",to_display.len());
+                        println!("Added attack ({}/23)",to_display.len());
                     } else {
                         println!("You allready have too many attacks!");
                     }
@@ -464,7 +465,18 @@ async fn main() {
         }
     }
     middle_column=middle_column.element(attack_display.padded(1).framed().padded(1));
-    let mut equipment = elements::TableLayout::new(vec![2,5]);
+    let traits = character.traits;
+    let personality = elements::LinearLayout::vertical()
+        .element(Paragraph::new(traits.0))
+        .element(Paragraph::new("PERSONALITY TRAITS")
+            .aligned(Alignment::Center)
+            .styled(style::new().with_font_size(10).bold()))
+        .padded(1)
+        .framed()
+        .padded(2);
+    let traits_elemt= elements::LinearLayout::vertical()
+        .element(personality)
+        .element(elements::Break::new(0.5))
     main_sheet
         .row()
         .element(elements::LinearLayout::vertical()

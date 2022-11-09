@@ -456,12 +456,12 @@ impl Character{
             } else if val["tags"].as_array().unwrap().len()>0 && val["tags"].as_array().unwrap()[0].as_str()==Some("background"){
                 background=Background::new(val["name"].as_str().unwrap().to_string(),
                     val["description"].as_str().unwrap().to_string());
-            } else if val["type"].as_str()==Some("constant")&&val["name"].as_str()==Some("Race"){
+            } else if val["type"].as_str()==Some("constant")&&val["variableName"].as_str()==Some("race"){
                 if race==String::new(){
                     race = val["calculation"].as_str().unwrap().to_string().replace("\"","");
                 }
-            } else if Self::metaSearch(val["tags"].as_array().unwrap(),&subclass_names){
-                race = val["name"].as_str().unwrap().to_string();
+            } else if val["type"].as_str()=Some("constant") && val["variableName"].as_str()==Some("subRace"){
+                race = val["calculation"].as_str().unwrap().to_string().replace("\"","");
             }
             idx +=1;
             if idx % 100 == 0{
