@@ -14,6 +14,7 @@ async fn main() {
     let symbol_font = doc.add_font_family(fonts::from_files("./fonts/Noto_Sans_Symbols_2","NotoSansSymbols2",None)
         .expect("Failed to load symbol font"));
     let symbol = style::Style::from(symbol_font);
+    let race_decoder= serde_json::from_str(fs::read_to_string("race_decoder.json").expect("Failed to read file"));
     let mut username = String::new();
     println!("Username:");
     let stdin= io::stdin();
@@ -107,7 +108,7 @@ async fn main() {
     detail_right
         .row()
         .element(
-            Paragraph::new(&character.race).styled(style::Style::new().with_line_spacing(0.5))
+            Paragraph::new(&race_translator(character.race.clone(),race_decoder)).styled(style::Style::new().with_line_spacing(0.5))
         )
         .element(
             Paragraph::new(&character.alignment).styled(style::Style::new().with_line_spacing(0.5))
@@ -562,4 +563,23 @@ fn proficiency_translator(prof: &Proficiency)->String{
         Proficiency::Profficient => String::from("⦿"),
         Proficiency::Expert => String::from("❂")
     }
+}
+fn race_translator(race: String,race_decoder: sedre_json::Value)-> String{
+    if race.len()==0: return race;
+    if let Some(out)=race_decoder[&race].as_str(){
+        return out.to_string();
+    }
+    let race_chars = race.chars();
+    let mut out = Vec<Char>::new();
+    let mut itr = race_chars.into_iter();
+    for ch in itr.next().unwrap().to_uppercase(){
+        out.push(ch);
+    }
+    for ch in itr{
+        if ch.is_uppercase() && !ch.is_lowercase(){
+            out.push(' ');
+        }
+        out.push(ch);
+    }
+    out.into_iter().collect()
 }

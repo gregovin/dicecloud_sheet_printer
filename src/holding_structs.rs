@@ -3,7 +3,7 @@ use std::cmp::{PartialOrd,Ordering,Ord};
 
 use std::str::FromStr;
 use std::collections::HashMap;
-
+use std::fs;
 ///defines an ability score by the value(score) and name
 pub struct AbilityScore{
     score: i64,
