@@ -3,6 +3,7 @@ use std::cmp::{PartialOrd,Ordering,Ord};
 
 use std::str::FromStr;
 use std::collections::HashMap;
+use owned_chars::OwnedChars;
 ///defines an ability score by the value(score) and name
 pub struct AbilityScore{
     score: i64,
@@ -524,15 +525,14 @@ fn race_translator(race: String,race_decoder: Value)-> String{
         return race;
     }
     //otherwise assume lowerCammelCase
-    let race_chars = race.chars();
+    let mut race_chars = OwnedChars::from_string(race);
     let mut out: Vec<char>= vec![];
-    let mut itr = race_chars.into_iter();
     //make the first character upper case(unicode is cursed)
-    for ch in itr.next().unwrap().to_uppercase(){
+    for ch in race_chars.next().unwrap().to_uppercase(){
         out.push(ch);
     }
     //loop over the other characters, if they are uppercase add a space. The upper case check is that way because unicode
-    for ch in itr{
+    for ch in race_chars{
         if ch.is_uppercase() && !ch.is_lowercase(){
             out.push(' ');
         }

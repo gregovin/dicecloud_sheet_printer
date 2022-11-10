@@ -6,7 +6,10 @@ use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,
 use serde_json::Value;
 use std::collections::HashMap;
 use tokio;
+use owned_chars::OwnedChars;
 use std::{io,process,fs};
+use std::borrow::{Cow,Borrow};
+use textwrap;
 
 #[tokio::main]
 async fn main() {
@@ -468,16 +471,46 @@ async fn main() {
     middle_column=middle_column.element(attack_display.padded(1).framed().padded(1));
     let traits = character.traits;
     let personality = elements::LinearLayout::vertical()
-        .element(Paragraph::new(traits.0))
+        .element(vertical_pad(traits.0,16,3))
         .element(Paragraph::new("PERSONALITY TRAITS")
             .aligned(Alignment::Center)
             .styled(style::Style::new().with_font_size(10).bold()))
         .padded(1)
         .framed()
-        .padded(2);
+        .padded(1);
+    let ideal = elements::LinearLayout::vertical()
+        .element(vertical_pad(traits.1,16,2))
+        .element(Paragraph::new("IDEALS")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().with_font_size(10).bold()))
+        .padded(1)
+        .framed()
+        .padded(1);
+    let bond = elements::LinearLayout::vertical()
+        .element(vertical_pad(traits.2,16,2))
+        .element(Paragraph::new("BONDS")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().with_font_size(10).bold()))
+        .padded(1)
+        .framed()
+        .padded(1);
+    let flaw = elements::LinearLayout::vertical()
+        .element(vertical_pad(traits.3,16,2))
+        .element(Paragraph::new("FLAWS")
+            .aligned(Alignment::Center)
+            .styled(style::Style::new().with_font_size(10).bold()))
+        .padded(1)
+        .framed()
+        .padded(1);
     let traits_elemt= elements::LinearLayout::vertical()
         .element(personality)
-        .element(elements::Break::new(0.5));
+        .element(elements::Break::new(0.5))
+        .element(ideal)
+        .element(elements::Break::new(0.5))
+        .element(bond)
+        .element(elements::Break::new(0.5))
+        .element(flaw)
+        .element(elements::Break::new(0.5))
     main_sheet
         .row()
         .element(elements::LinearLayout::vertical()
@@ -521,7 +554,7 @@ async fn main() {
             .element(elements::Break::new(0.25))
             .element(middle_column)
         )
-        .element(Paragraph::new(""))
+        .element(traits_elemt)
         .push().expect("failed to add row");
     doc.push(main_sheet);
     println!("Rendering pdf...(this may take a moment)");
@@ -563,4 +596,17 @@ fn proficiency_translator(prof: &Proficiency)->String{
         Proficiency::Profficient => String::from("⦿"),
         Proficiency::Expert => String::from("❂")
     }
+}
+/// pads a String vertically(ie with new lines) to lines long, assuming a line width of `width` characters(under worst case)
+fn vertical_pad(txt: String, width: usize, lines: usize)->elements::LinearLayout{
+    let mut wrapped= textwrap::wrap(&txt,width).into_iter();
+    let mut out = elements::LinearLayout::vertical();
+    for _idx in 0..lines{
+        if let Some(mut thing)=wrapped.next(){
+            out=out.element(Paragraph::new(thing.to_mut().as_str()).aligned(Alignment::Center));
+        } else {
+            out=out.element(elements::Break::new(1.0));
+        }
+    }
+    out
 }
