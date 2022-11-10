@@ -285,7 +285,7 @@ impl Character{
         }
         return false;
     }
-    pub fn new(char_json: Value)->Character{
+    pub fn new(char_json: Value,race_decoder: Value)->Character{
         let char_name=&char_json["creatures"][0]["name"];
         let subclass_names: Vec<&str>=vec!["Subrace","Season","Type","Creed"];
         if char_name == &Value::Null{
@@ -468,8 +468,11 @@ impl Character{
                 println!("Proccessed {} properties",idx);
             }
         }
+        let race = race_translator(race,race_decoder);
         for pair in attacks_dict.iter(){
-            attacks.push(pair.1.clone());
+            if pair.1.get_name().len() !=0{
+                attacks.push(pair.1.clone());
+            }
         }
         Character{
             char_name,
@@ -510,4 +513,31 @@ fn damage_type_abreviator(typ: String)->String{
     let mut typ_bits=typ.into_bytes();
     typ_bits.truncate(3);
     return String::from_utf8(typ_bits).expect("should never happen by design")+".";
+}
+fn race_translator(race: String,race_decoder: sedre_json::Value)-> String{
+    if race.len()==0: return race;//deal with this nasty edge case
+    //if the race is one of the special ones in the decoder, do that
+    if let Some(out)=race_decoder[&race].as_str(){
+        return out.to_string();
+    }
+    //if it allready has a space, it is probably formated right
+    if race.contains(" "){
+        return race;
+    }
+    //otherwise assume lowerCammelCase
+    let race_chars = race.chars();
+    let mut out = Vec<Char>::new();
+    let mut itr = race_chars.into_iter();
+    //make the first character upper case(unicode is cursed)
+    for ch in itr.next().unwrap().to_uppercase(){
+        out.push(ch);
+    }
+    //loop over the other characters, if they are uppercase add a space. The upper case check is that way because unicode
+    for ch in itr{
+        if ch.is_uppercase() && !ch.is_lowercase(){
+            out.push(' ');
+        }
+        out.push(ch);
+    }
+    out.into_iter().collect()
 }

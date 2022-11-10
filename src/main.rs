@@ -58,7 +58,7 @@ async fn main() {
     doc.push(header);
     let mut detail = elements::TableLayout::new(vec![1,2]);
     println!("Processing Character...");
-    let character = Character::new(char_json.await);
+    let character = Character::new(char_json.await,race_decoder);
     println!("Setting up document...");
     detail.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
     let detail_left = elements::LinearLayout::vertical()
@@ -563,31 +563,4 @@ fn proficiency_translator(prof: &Proficiency)->String{
         Proficiency::Profficient => String::from("⦿"),
         Proficiency::Expert => String::from("❂")
     }
-}
-fn race_translator(race: String,race_decoder: sedre_json::Value)-> String{
-    if race.len()==0: return race;//deal with this nasty edge case
-    //if the race is one of the special ones in the decoder, do that
-    if let Some(out)=race_decoder[&race].as_str(){
-        return out.to_string();
-    }
-    //if it allready has a space, it is probably formated right
-    if race.contains(" "){
-        return race;
-    }
-    //otherwise assume TLoE formating
-    let race_chars = race.chars();
-    let mut out = Vec<Char>::new();
-    let mut itr = race_chars.into_iter();
-    //make the first character uppercase
-    for ch in itr.next().unwrap().to_uppercase(){
-        out.push(ch);
-    }
-    //for the others, add spaces before uppercase characters. Because unicode we want to only add spaces before characters that aren't lower case
-    for ch in itr{
-        if ch.is_uppercase() && !ch.is_lowercase(){
-            out.push(' ');
-        }
-        out.push(ch);
-    }
-    out.into_iter().collect()
 }
