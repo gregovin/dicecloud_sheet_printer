@@ -1,7 +1,4 @@
 use std::collections::HashMap;
-
-use reqwest;
-use futures::{stream, StreamExt};
 use serde_json::Value;
 use genpdf::{Element, Alignment};
 use genpdf::{elements,fonts, style};
@@ -24,7 +21,7 @@ pub async fn get_token(username: String, psw: String)->String{
     }
     let js_res: Result<Value,_>= serde_json::from_str(&txt);
     let token =js_res.expect("Failed to parse Json")["token"].as_str().unwrap().to_string();
-    token.to_string()
+    token
 }
 /// should have charcter_url=https://beta.dicecloud.com/api/creature/<creatureId>
 pub async fn get_character(token: String, character_url: String)->Value{

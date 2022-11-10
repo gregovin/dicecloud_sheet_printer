@@ -1,9 +1,8 @@
 use serde_json::Value;
 use std::cmp::{PartialOrd,Ordering,Ord};
-
-use std::str::FromStr;
 use std::collections::HashMap;
 use owned_chars::OwnedChars;
+use std::fmt::{self,Write};
 ///defines an ability score by the value(score) and name
 pub struct AbilityScore{
     score: i64,
@@ -112,11 +111,13 @@ impl Die{
     pub fn get_num(&self)->i64{
         self.num
     }
-    pub fn to_string(&self)->String{
-        format!("{}d{}",self.num,self.size)
-    }
     pub fn new(size: i64,num: i64)->Die{
         Die { size, num }
+    }
+}
+impl fmt::Display for Die{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}d{}",self.num,self.size)
     }
 }
 ///an attack bouns can be a regular bonus or DC
@@ -125,18 +126,18 @@ pub enum AtkBonus{
     Bonus(i64),
     DC(i64),
 }
-impl AtkBonus{
-    pub fn to_string(&self)->String{
+impl fmt::Display for AtkBonus{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self{
             AtkBonus::Bonus(k)=>{
                 if k>&0{
-                    format!("+{}",k).to_string()
+                    write!(f,"+{}",k)
                 } else {
-                    format!("{}",k).to_string()
+                    write!(f,"{}",k)
                 }
             },
             AtkBonus::DC(k) =>{
-                format!("DC {}",k).to_string()
+                write!(f,"DC {}",k)
             }
         }
     }
@@ -165,8 +166,8 @@ impl Attack{
         Attack { name , bonus, damage }
     }
     pub fn add_dmg(&mut self, dmg: String){
-        if self.damage.len()>0{
-            self.damage+=&format!(", {}",dmg);
+        if !self.damage.is_empty(){
+            let _= write!(self.damage,", {}",dmg);
         }
         else{
             self.damage=dmg;
@@ -273,21 +274,8 @@ pub struct Character{
 }
 
 impl Character{
-    fn metaSearch(field: &Vec<Value>,targets:&Vec<&str>)->bool{
-        let mut idx =0;
-        for val in field{
-            for target in targets{
-                if val.as_str().unwrap().contains(target){
-                    return true;
-                }
-            }
-            idx +=1;
-        }
-        return false;
-    }
     pub fn new(char_json: Value,race_decoder: Value)->Character{
         let char_name=&char_json["creatures"][0]["name"];
-        let subclass_names: Vec<&str>=vec!["Subrace","Season","Type","Creed"];
         if char_name == &Value::Null{
             panic!("cannot find char name, probably because the api is wrong");
         }
@@ -393,7 +381,7 @@ impl Character{
                 let total: i64 = val["total"].as_i64().unwrap();
                 if total>0{
                     let ds: String = val["hitDiceSize"].as_str().unwrap().to_string();
-                    let size: i64=ds.split("d").collect::<Vec<_>>()[1].parse().unwrap();
+                    let size: i64=ds.split('d').collect::<Vec<_>>()[1].parse().unwrap();
                     hit_dice.push(Die::new(size,total));
                 }
             }else if val["type"].as_str()==Some("action") && val["actionType"].as_str()==Some("attack"){
@@ -407,10 +395,7 @@ impl Character{
             }else if val["type"].as_str()==Some("damage"){
                 let par_id = val["parent"]["id"].as_str().unwrap().to_string();
                 let dmg_die = val["amount"]["calculation"].as_str().unwrap();
-                let dmg_bonus = match val["amount"]["effects"][0]["amount"]["value"].as_i64(){
-                    Some(k)=>k,
-                    None=>0,
-                };
+                let dmg_bonus = val["amount"]["effects"][0]["amount"]["value"].as_i64().unwrap_or(0);
                 let dmg_type = val["damageType"].as_str().unwrap().to_string();
                 let dmg_string = format!("{}{}{}[{}]",dmg_die,if dmg_bonus>=0 {"+"} else {""},
                 dmg_bonus,damage_type_abreviator(dmg_type));
@@ -453,15 +438,15 @@ impl Character{
                 hit_points=val["total"].as_i64().unwrap();
             } else if val["name"].as_str()==Some("Armor Class") && val["type"].as_str()==Some("attribute"){
                 ac=val["total"].as_i64().unwrap();
-            } else if val["tags"].as_array().unwrap().len()>0 && val["tags"].as_array().unwrap()[0].as_str()==Some("background"){
+            } else if !val["tags"].as_array().unwrap().is_empty() && val["tags"].as_array().unwrap()[0].as_str()==Some("background"){
                 background=Background::new(val["name"].as_str().unwrap().to_string(),
                     val["description"].as_str().unwrap().to_string());
             } else if val["type"].as_str()==Some("constant")&&val["variableName"].as_str()==Some("race"){
                 if race==String::new(){
-                    race = val["calculation"].as_str().unwrap().to_string().replace("\"","");
+                    race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
                 }
             } else if val["type"].as_str()==Some("constant") && val["variableName"].as_str()==Some("subRace"){
-                race = val["calculation"].as_str().unwrap().to_string().replace("\"","");
+                race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
             }
             idx +=1;
             if idx % 100 == 0{
@@ -470,7 +455,7 @@ impl Character{
         }
         let race = race_translator(race,race_decoder);
         for pair in attacks_dict.iter(){
-            if pair.1.get_name().len() !=0{
+            if !pair.1.get_name().is_empty(){
                 attacks.push(pair.1.clone());
             }
         }
@@ -512,16 +497,16 @@ fn damage_type_abreviator(typ: String)->String{
     }
     let mut typ_bits=typ.into_bytes();
     typ_bits.truncate(3);
-    return String::from_utf8(typ_bits).expect("should never happen by design")+".";
+    String::from_utf8(typ_bits).expect("should never happen by design")+"."
 }
 fn race_translator(race: String,race_decoder: Value)-> String{
-    if race.len()==0{return race};//deal with this nasty edge case
+    if race.is_empty(){return race};//deal with this nasty edge case
     //if the race is one of the special ones in the decoder, do that
     if let Some(out)=race_decoder[&race].as_str(){
         return out.to_string();
     }
     //if it allready has a space, it is probably formated right
-    if race.contains(" "){
+    if race.contains(' '){
         return race;
     }
     //otherwise assume lowerCammelCase

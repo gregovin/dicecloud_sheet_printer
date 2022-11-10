@@ -1,14 +1,9 @@
-use std::env;
-use std::hash::Hash;
 use genpdf::{Element, Alignment};
 use genpdf::{elements::{self,Paragraph},fonts, style};
 use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,bns_translator,holding_structs::*};
-use serde_json::Value;
 use std::collections::HashMap;
-use tokio;
 use std::{io,process,fs};
-use textwrap;
-
+use std::fmt::Write;
 #[tokio::main]
 async fn main() {
     let mut doc = generate_pdf();
@@ -25,11 +20,11 @@ async fn main() {
     println!("Password:");
     stdin.read_line(&mut psw).expect("Fallied to get password");
     let token =get_token(username, psw).await;
-    if token.len() ==0{
+    if token.is_empty(){
         println!("Failed to login! Try accessing with no token?(y/n)");
         let mut ans= String::new();
         stdin.read_line(&mut ans).expect("failed to get answer");
-        if !ans.to_lowercase().contains("y"){
+        if !ans.to_lowercase().contains('y'){
             println!("Exiting to terminal");
             process::exit(0);
         }
@@ -72,7 +67,7 @@ async fn main() {
         let mut want_xp = String::new();
         println!("Do you want to include your xp in the sheet?(y/n) Keep in mind this will make it harder to pencil it in later");
         stdin.read_line(&mut want_xp).expect("Failed to read answer");
-        if want_xp.to_lowercase().contains("y"){
+        if want_xp.to_lowercase().contains('y'){
             xp+=&character.xp.to_string();
         }
     }
@@ -80,7 +75,7 @@ async fn main() {
     detail_right.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
     let mut class_str = String::new();
     for class in &character.classes{
-        class_str+=&format!("{} {}",class.get_name(),class.get_level());
+        let _=write!(class_str,"{} {}",class.get_name(),class.get_level());
     }
     detail_right
         .row()
@@ -347,20 +342,20 @@ async fn main() {
         .element(elements::LinearLayout::vertical()
             .element(Paragraph::default()
                 .styled_string("SUCCESSES ",style::Style::new().with_font_size(7))
-                .styled_string("⭘",symbol.clone().with_font_size(7))
+                .styled_string("⭘",symbol.with_font_size(7))
                 .styled_string("-",style::Style::new().with_font_size(7))
-                .styled_string("⭘",symbol.clone().with_font_size(7))
+                .styled_string("⭘",symbol.with_font_size(7))
                 .styled_string("-",style::Style::new().with_font_size(7))
-                .styled_string("⭘ ",symbol.clone().with_font_size(7))
+                .styled_string("⭘ ",symbol.with_font_size(7))
                 .aligned(Alignment::Right)
             )
             .element(Paragraph::default()
                 .styled_string("FAILURES ",style::Style::new().with_font_size(7))
-                .styled_string("⭘",symbol.clone().with_font_size(7))
+                .styled_string("⭘",symbol.with_font_size(7))
                 .styled_string("-",style::Style::new().with_font_size(7))
-                .styled_string("⭘",symbol.clone().with_font_size(7))
+                .styled_string("⭘",symbol.with_font_size(7))
                 .styled_string("-",style::Style::new().with_font_size(7))
-                .styled_string("⭘ ",symbol.clone().with_font_size(7))
+                .styled_string("⭘ ",symbol.with_font_size(7))
                 .aligned(Alignment::Right)
             )
             .element(Paragraph::new("DEATH SAVES")
@@ -596,11 +591,11 @@ fn element_from_score(score: &AbilityScore)->elements::LinearLayout{
 }
 fn element_from_skill(skill: &Skill, symb_fnt: &style::Style)->elements::StyledElement<Paragraph>{
     let mut bns = bns_translator(skill.get_mod());
-    if bns.bytes().count() == 2 {
+    if bns.len() == 2 {
         bns=String::from(" ")+&bns;
     }
     Paragraph::default()
-        .styled_string(format!("{}",proficiency_translator(skill.get_prof())),symb_fnt.clone())
+        .styled_string(proficiency_translator(skill.get_prof()),*symb_fnt)
         .string(format!(" {}  {}",bns,skill.get_name()))
         .styled(style::Style::new().with_font_size(8))
 }
