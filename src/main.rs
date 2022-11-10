@@ -6,7 +6,7 @@ use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,
 use serde_json::Value;
 use std::collections::HashMap;
 use tokio;
-use std::{io,process};
+use std::{io,process,fs};
 
 #[tokio::main]
 async fn main() {
@@ -14,7 +14,7 @@ async fn main() {
     let symbol_font = doc.add_font_family(fonts::from_files("./fonts/Noto_Sans_Symbols_2","NotoSansSymbols2",None)
         .expect("Failed to load symbol font"));
     let symbol = style::Style::from(symbol_font);
-    let race_decoder= serde_json::from_str(fs::read_to_string("race_decoder.json").expect("Failed to read file"));
+    let race_decoder= serde_json::from_str(&fs::read_to_string("race_decoder.json").expect("Failed to read file race_decoder.json")).expect("Failed to parse race decoder");
     let mut username = String::new();
     println!("Username:");
     let stdin= io::stdin();
@@ -108,7 +108,7 @@ async fn main() {
     detail_right
         .row()
         .element(
-            Paragraph::new(&race_translator(character.race.clone(),race_decoder)).styled(style::Style::new().with_line_spacing(0.5))
+            Paragraph::new(character.race).styled(style::Style::new().with_line_spacing(0.5))
         )
         .element(
             Paragraph::new(&character.alignment).styled(style::Style::new().with_line_spacing(0.5))
@@ -471,13 +471,13 @@ async fn main() {
         .element(Paragraph::new(traits.0))
         .element(Paragraph::new("PERSONALITY TRAITS")
             .aligned(Alignment::Center)
-            .styled(style::new().with_font_size(10).bold()))
+            .styled(style::Style::new().with_font_size(10).bold()))
         .padded(1)
         .framed()
         .padded(2);
     let traits_elemt= elements::LinearLayout::vertical()
         .element(personality)
-        .element(elements::Break::new(0.5))
+        .element(elements::Break::new(0.5));
     main_sheet
         .row()
         .element(elements::LinearLayout::vertical()

@@ -3,7 +3,6 @@ use std::cmp::{PartialOrd,Ordering,Ord};
 
 use std::str::FromStr;
 use std::collections::HashMap;
-use std::fs;
 ///defines an ability score by the value(score) and name
 pub struct AbilityScore{
     score: i64,
@@ -460,7 +459,7 @@ impl Character{
                 if race==String::new(){
                     race = val["calculation"].as_str().unwrap().to_string().replace("\"","");
                 }
-            } else if val["type"].as_str()=Some("constant") && val["variableName"].as_str()==Some("subRace"){
+            } else if val["type"].as_str()==Some("constant") && val["variableName"].as_str()==Some("subRace"){
                 race = val["calculation"].as_str().unwrap().to_string().replace("\"","");
             }
             idx +=1;
@@ -514,8 +513,8 @@ fn damage_type_abreviator(typ: String)->String{
     typ_bits.truncate(3);
     return String::from_utf8(typ_bits).expect("should never happen by design")+".";
 }
-fn race_translator(race: String,race_decoder: sedre_json::Value)-> String{
-    if race.len()==0: return race;//deal with this nasty edge case
+fn race_translator(race: String,race_decoder: Value)-> String{
+    if race.len()==0{return race};//deal with this nasty edge case
     //if the race is one of the special ones in the decoder, do that
     if let Some(out)=race_decoder[&race].as_str(){
         return out.to_string();
@@ -526,7 +525,7 @@ fn race_translator(race: String,race_decoder: sedre_json::Value)-> String{
     }
     //otherwise assume lowerCammelCase
     let race_chars = race.chars();
-    let mut out = Vec<Char>::new();
+    let mut out: Vec<char>= vec![];
     let mut itr = race_chars.into_iter();
     //make the first character upper case(unicode is cursed)
     for ch in itr.next().unwrap().to_uppercase(){
