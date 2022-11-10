@@ -472,7 +472,7 @@ async fn main() {
         .element(vertical_pad(traits.0,28,3))
         .element(Paragraph::new("PERSONALITY TRAITS")
             .aligned(Alignment::Center)
-            .styled(style::Style::new().with_font_size(10).bold()))
+            .styled(style::Style::new().with_font_size(7).bold()))
         .padded(1)
         .framed()
         .padded(1);
@@ -480,7 +480,7 @@ async fn main() {
         .element(vertical_pad(traits.1,28,2))
         .element(Paragraph::new("IDEALS")
             .aligned(Alignment::Center)
-            .styled(style::Style::new().with_font_size(10).bold()))
+            .styled(style::Style::new().with_font_size(7).bold()))
         .padded(1)
         .framed()
         .padded(1);
@@ -488,7 +488,7 @@ async fn main() {
         .element(vertical_pad(traits.2,28,2))
         .element(Paragraph::new("BONDS")
             .aligned(Alignment::Center)
-            .styled(style::Style::new().with_font_size(10).bold()))
+            .styled(style::Style::new().with_font_size(7).bold()))
         .padded(1)
         .framed()
         .padded(1);
@@ -496,7 +496,7 @@ async fn main() {
         .element(vertical_pad(traits.3,28,2))
         .element(Paragraph::new("FLAWS")
             .aligned(Alignment::Center)
-            .styled(style::Style::new().with_font_size(10).bold()))
+            .styled(style::Style::new().with_font_size(7).bold()))
         .padded(1)
         .framed()
         .padded(1);
@@ -508,7 +508,20 @@ async fn main() {
         .element(bond)
         .element(elements::Break::new(0.5))
         .element(flaw)
-        .element(elements::Break::new(0.5));
+        .element(elements::Break::new(0.25));
+    let mut features_elem= elements::LinearLayout::vertical();
+    features_elem=features_elem.element(Paragraph::new("FEATURES & TRAITS").aligned(Alignment::Center)
+        .styled(style::Style::new().bold().with_font_size(7)));
+    let mut features = character.features.into_iter();
+    for _i in 0..27{
+        if let Some(name)=features.next(){
+            features_elem=features_elem.element(Paragraph::new(name).aligned(Alignment::Center)
+                .styled(style::Style::new().with_font_size(10)));
+        } else {
+            features_elem=features_elem.element(elements::Break::new(1.0).styled(style::Style::new().with_font_size(10)));
+        }
+
+    }
     main_sheet
         .row()
         .element(elements::LinearLayout::vertical()
@@ -552,7 +565,11 @@ async fn main() {
             .element(elements::Break::new(0.25))
             .element(middle_column)
         )
-        .element(traits_elemt)
+        .element(elements::LinearLayout::vertical()
+            .element(traits_elemt)
+            .element(elements::Break::new(0.25))
+            .element(features_elem.padded(1).framed().padded(1))
+        )
         .push().expect("failed to add row");
     doc.push(main_sheet);
     println!("Rendering pdf...(this may take a moment)");
@@ -601,7 +618,8 @@ fn vertical_pad(txt: String, width: usize, lines: usize)->elements::LinearLayout
     let mut out = elements::LinearLayout::vertical();
     for _idx in 0..lines{
         if let Some(mut thing)=wrapped.next(){
-            out=out.element(Paragraph::new(thing.to_mut().as_str()).aligned(Alignment::Center));
+            out=out.element(Paragraph::new(thing.to_mut().as_str()).aligned(Alignment::Center)
+                .styled(style::Style::new().with_font_size(10)));
         } else {
             out=out.element(elements::Break::new(1.0));
         }
