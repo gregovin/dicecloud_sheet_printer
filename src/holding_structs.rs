@@ -1,4 +1,4 @@
-use serde_json::Value;
+use serde_json::Value;core
 use std::cmp::{PartialOrd,Ordering,Ord};
 use std::collections::HashMap;
 use owned_chars::OwnedChars;
@@ -9,13 +9,13 @@ pub struct AbilityScore{
     name: String,
 }
 impl AbilityScore{
-    pub fn get_score(&self)->i64{
+    pub fn score(&self)->i64{
         self.score
     }
-    pub fn get_name(&self)->&String{
+    pub fn name(&self)->&String{
         &self.name
     }
-    pub fn get_modifier(&self)->i64{
+    pub fn modifier(&self)->i64{
         self.score/2 -5
     }
     pub fn new(name: String, score: i64)->AbilityScore{
@@ -38,13 +38,13 @@ pub struct Skill{
     prof_rank: Proficiency
 }
 impl Skill{
-    pub fn get_prof(&self)->&Proficiency{
+    pub fn prof(&self)->&Proficiency{
         &self.prof_rank
     }
-    pub fn get_mod(&self)->i64{
+    pub fn modifier(&self)->i64{
         self.bonus
     }
-    pub fn get_name(&self)->&String{
+    pub fn name(&self)->&String{
         &self.name
     }
     pub fn new(name: String, bonus: i64, prof_rank: Proficiency)->Skill{
@@ -53,13 +53,13 @@ impl Skill{
 }
 impl PartialOrd for Skill{
     fn partial_cmp(&self, other: &Skill)->Option<Ordering>{
-        if self.get_name()!=other.get_name(){
-            return self.get_name().partial_cmp(other.get_name());
+        if self.name()!=other.name(){
+            return self.name().partial_cmp(other.name());
         }
-        if self.get_prof()!=other.get_prof() {
-            return self.get_prof().partial_cmp(other.get_prof());
+        if self.prof()!=other.prof() {
+            return self.prof().partial_cmp(other.prof());
         }
-        self.get_mod().partial_cmp(&other.get_mod())
+        self.modifier().partial_cmp(&other.modifier())
     }
 }
 impl Ord for Skill{
@@ -73,10 +73,10 @@ pub struct Class{
     level: i64,
 }
 impl Class{
-    pub fn get_name(&self)->&String{
+    pub fn name(&self)->&String{
         &self.name
     }
-    pub fn get_level(&self)->i64{
+    pub fn level(&self)->i64{
         self.level
     }
     pub fn new(name: String, level: i64)->Class{
@@ -89,10 +89,10 @@ pub struct Background{
     description: String,
 }
 impl Background{
-    pub fn get_name(&self)->&String{
+    pub fn name(&self)->&String{
         &self.name
     }
-    pub fn get_description(&self)->&String{
+    pub fn description(&self)->&String{
         &self.description
     }
     pub fn new(name: String, description: String)-> Background{
@@ -105,10 +105,10 @@ pub struct Die{
     num: i64,
 }
 impl Die{
-    pub fn get_size(&self)->i64{
+    pub fn size(&self)->i64{
         self.size
     }
-    pub fn get_num(&self)->i64{
+    pub fn num(&self)->i64{
         self.num
     }
     pub fn new(size: i64,num: i64)->Die{
@@ -150,16 +150,16 @@ pub struct Attack{
     damage: String
 }
 impl Attack{
-    pub fn get_name(&self)->&String{
+    pub fn name(&self)->&String{
         &self.name
     }
-    pub fn get_bonus(&self)->&AtkBonus{
+    pub fn bonus(&self)->&AtkBonus{
         &self.bonus
     }
-    pub fn get_bonus_as_string(&self)->String{
+    pub fn bonus_as_string(&self)->String{
         self.bonus.to_string()
     }
-    pub fn get_damage(&self)->&String{
+    pub fn damage(&self)->&String{
         &self.damage
     }
     pub fn new(name: String,bonus: AtkBonus,damage: String)->Attack{
@@ -180,10 +180,10 @@ pub struct Item{
     name: String,
 }
 impl Item{
-    pub fn get_quantity(&self)->i64{
+    pub fn quantity(&self)->i64{
         self.quantity
     }
-    pub fn get_name(&self)->&String{
+    pub fn name(&self)->&String{
         &self.name
     }
     pub fn new(quantity: i64,name: String)->Item{
@@ -196,10 +196,10 @@ pub struct SpellLevel{
     spells: Vec<String>
 }
 impl SpellLevel{
-    pub fn get_lvl(&self)->i64{
+    pub fn lvl(&self)->i64{
         self.level
     }
-    pub fn get_spells(&self)->&Vec<String>{
+    pub fn spells(&self)->&Vec<String>{
         &self.spells
     }
     pub fn new(level: i64, spells: Vec<String>)->SpellLevel{
@@ -218,19 +218,19 @@ pub struct SpellList{
     atk_bonus: i64,
 }
 impl SpellList{
-    pub fn get_levels(&self)->&Vec<SpellLevel>{
+    pub fn levels(&self)->&Vec<SpellLevel>{
         &self.levels
     }
-    pub fn get_class(&self)->&String{
+    pub fn class(&self)->&String{
         &self.casting_class
     }
-    pub fn get_ability(&self)->&String{
+    pub fn ability(&self)->&String{
         &self.casting_ability
     }
-    pub fn get_dc(&self)->i64{
+    pub fn dc(&self)->i64{
         self.save_dc
     }
-    pub fn get_bonus(&self)->i64{
+    pub fn bonus(&self)->i64{
         self.atk_bonus
     }
     pub fn new(levels: Vec<SpellLevel>,casting_class: String,casting_ability: String,save_dc: i64, atk_bonus: i64)->SpellList{
@@ -388,7 +388,7 @@ impl Character{
                 let bns = AtkBonus::Bonus(val["attackRoll"]["value"].as_i64().unwrap());
                 let id = val["_id"].as_str().unwrap().to_string();
                 let dmg = match attacks_dict.get(&id){
-                    Some(atk)=>atk.get_damage(),
+                    Some(atk)=>atk.damage(),
                     None=>""
                 };
                 attacks_dict.insert(id,Attack::new(val["name"].as_str().unwrap().to_string(),bns,dmg.to_string()));
@@ -399,7 +399,7 @@ impl Character{
                 let dmg_type = val["damageType"].as_str().unwrap().to_string();
                 let dmg_string = format!("{}{}{}[{}]",dmg_die,if dmg_bonus>=0 {"+"} else {""},
                 dmg_bonus,damage_type_abreviator(dmg_type));
-                match attacks_dict.get_mut(&par_id){
+                match attacks_dict.mut(&par_id){
                     Some(atk)=>atk.add_dmg(dmg_string),
                     None=>{attacks_dict.insert(par_id,Attack::new(String::new(),AtkBonus::Bonus(0),dmg_string));},
                 };
@@ -455,7 +455,7 @@ impl Character{
         }
         let race = race_translator(race,race_decoder);
         for pair in attacks_dict.iter(){
-            if !pair.1.get_name().is_empty(){
+            if !pair.1.name().is_empty(){
                 attacks.push(pair.1.clone());
             }
         }

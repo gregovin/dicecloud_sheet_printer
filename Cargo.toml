@@ -2,6 +2,14 @@
 name = "dicecloud_sheet_printer"
 version = "0.1.0"
 edition = "2021"
+authors = ["Gregory Hess <gregory.w.hess@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A tool for printing a 5e character off of dicecloud v2"
+readme = "README.md"
+homepage = "https://github.com/gregovin/dicecloud_sheet_printer"
+repository = "https://github.com/gregovin/dicecloud_sheet_printer"
+keywords = ["cli", "dcv2", "printing","api"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

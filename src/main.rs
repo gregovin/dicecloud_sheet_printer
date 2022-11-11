@@ -75,7 +75,7 @@ async fn main() {
     detail_right.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
     let mut class_str = String::new();
     for class in &character.classes{
-        let _=write!(class_str,"{} {}",class.get_name(),class.get_level());
+        let _=write!(class_str,"{} {}",class.name(),class.level());
     }
     detail_right
         .row()
@@ -83,7 +83,7 @@ async fn main() {
             Paragraph::new(class_str).styled(style::Style::new().with_line_spacing(0.5))
         )
         .element(
-            Paragraph::new(character.background.get_name()).styled(style::Style::new().with_line_spacing(0.5))
+            Paragraph::new(character.background.name()).styled(style::Style::new().with_line_spacing(0.5))
         )
         .element(
             Paragraph::new("").styled(style::Style::new().with_line_spacing(0.5))
@@ -144,7 +144,7 @@ async fn main() {
     let mut main_sheet = elements::TableLayout::new(vec![1,1,1]);
     let mut ability_scores: HashMap<&str,&AbilityScore> = HashMap::new();
     for score in &character.ability_scores{
-        ability_scores.insert(score.get_name(),score);
+        ability_scores.insert(score.name(),score);
     }
     main_sheet.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));    
     let mut left_bar = elements::TableLayout::new(vec![1,2]);
@@ -152,7 +152,7 @@ async fn main() {
     let mut skills = character.skills;
     let mut saves: HashMap<&str,&Skill> = HashMap::new();
     for save in &character.saving_throws{
-        saves.insert(save.get_name(),save);
+        saves.insert(save.name(),save);
     }
     let saving_throws = elements::LinearLayout::vertical()
         .element(element_from_skill(saves.get("Strength Save").unwrap(),&symbol))
@@ -172,8 +172,8 @@ async fn main() {
     let mut passive_bonus: i64 = 10;
     for skill in skills{
         skill_element=skill_element.element(element_from_skill(&skill,&symbol));
-        if skill.get_name()=="Perception"{
-            passive_bonus+=skill.get_mod()+character.passive_bonus;
+        if skill.name()=="Perception"{
+            passive_bonus+=skill.modifier()+character.passive_bonus;
         }
     }
     skill_element=skill_element.element(elements::Break::new(0.5))
@@ -369,7 +369,7 @@ async fn main() {
     let atks = character.attacks;
     let mut atk_dict: HashMap<String,Attack> = HashMap::new();
     for atk in atks{
-        atk_dict.insert(atk.get_name().clone(),atk);
+        atk_dict.insert(atk.name().clone(),atk);
     }
     let mut to_display: Vec<Attack>=vec![];
     //needs to be rethought
@@ -381,9 +381,9 @@ async fn main() {
             let mut current_inst: String=String::new();
             stdin.read_line(&mut current_inst).expect("failed to read line");
             if &current_inst.trim().to_lowercase()=="list"{
-                println!("{}",atk_dict.iter().map(|atk| atk.1.get_name().clone()).collect::<Vec<_>>().join(", "));
+                println!("{}",atk_dict.iter().map(|atk| atk.1.name().clone()).collect::<Vec<_>>().join(", "));
             } else if &current_inst.trim().to_lowercase()=="selection"{
-                println!("{} ({}/23)",to_display.iter().map(|atk| atk.get_name().clone()).collect::<Vec<_>>().join(", "),to_display.len());
+                println!("{} ({}/23)",to_display.iter().map(|atk| atk.name().clone()).collect::<Vec<_>>().join(", "),to_display.len());
             } else if &current_inst.trim().to_lowercase()=="instructions"{
                 println!("Type \"list\" to list all attacks, \"selection\" to show selection, \"instructions\" to print this again, \"remove <name>\" to remove an attack by name, \"add <name>\" to add an attack by name, or \"done\" to finish selection");
             } else if current_inst.trim().to_lowercase().contains("remove"){
@@ -424,7 +424,7 @@ async fn main() {
         .element(Paragraph::new("DAMAGE/TYPE").styled(style::Style::new().with_font_size(7)))
         .push().expect("failed to add row");
     for atk in to_display{
-        let nme = atk.get_name().to_string();
+        let nme = atk.name().to_string();
         let mut trunk = nme.replace(" (Two-Handed)","(2H)");
         trunk.truncate(13);
         attack_display.row()
@@ -432,12 +432,12 @@ async fn main() {
                 .styled(style::Style::new().bold().with_font_size(10))
                 )
             .element(
-                Paragraph::new(atk.get_bonus_as_string())
+                Paragraph::new(atk.bonus_as_string())
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(10))
             )
             .element(
-                Paragraph::new(atk.get_damage())
+                Paragraph::new(atk.damage())
                 .styled(style::Style::new().with_font_size(10))
             )
             .push().expect("failed to add row");
@@ -573,30 +573,30 @@ async fn main() {
 fn element_from_score(score: &AbilityScore)->elements::LinearLayout{
     elements::LinearLayout::vertical()
         .element(
-            Paragraph::new(score.get_name().to_uppercase())
+            Paragraph::new(score.name().to_uppercase())
             .aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(7))
         )
         .element(
-            Paragraph::new(bns_translator(score.get_modifier()))
+            Paragraph::new(bns_translator(score.modifier()))
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(20))
         )
         .element(
-            Paragraph::new(score.get_score().to_string())
+            Paragraph::new(score.score().to_string())
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(7))
                 .framed()
         )
 }
 fn element_from_skill(skill: &Skill, symb_fnt: &style::Style)->elements::StyledElement<Paragraph>{
-    let mut bns = bns_translator(skill.get_mod());
+    let mut bns = bns_translator(skill.modifier());
     if bns.len() == 2 {
         bns=String::from(" ")+&bns;
     }
     Paragraph::default()
-        .styled_string(proficiency_translator(skill.get_prof()),*symb_fnt)
-        .string(format!(" {}  {}",bns,skill.get_name()))
+        .styled_string(proficiency_translator(skill.prof()),*symb_fnt)
+        .string(format!(" {}  {}",bns,skill.name()))
         .styled(style::Style::new().with_font_size(8))
 }
 fn proficiency_translator(prof: &Proficiency)->String{
