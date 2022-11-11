@@ -5,6 +5,7 @@ use owned_chars::OwnedChars;
 use std::fmt::{self,Write};
 ///defines an ability score by the value(score) and name
 #[derive(Clone,Eq,PartialEq,Hash,Debug,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AbilityScore{
     score: i64,
     name: String,
@@ -25,6 +26,7 @@ impl AbilityScore{
 }
 ///Types of proficiency listed
 #[derive(Debug, Eq, PartialEq,PartialOrd,Ord,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Proficiency {
     #[default]
     None,
@@ -34,6 +36,7 @@ pub enum Proficiency {
 }
 ///A skill is a bonus, name, and prof
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Skill{
     bonus: i64,
     name: String,
@@ -71,6 +74,7 @@ impl Ord for Skill{
 }
 ///A class is a name and a level
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Class{
     name: String,
     level: i64,
@@ -88,6 +92,7 @@ impl Class{
 }
 ///a background is a name and a description
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Background{
     name: String,
     description: String,
@@ -105,6 +110,7 @@ impl Background{
 }
 ///a dice has a size, and we include the number
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Die{
     size: i64,
     num: i64,
@@ -127,6 +133,7 @@ impl fmt::Display for Die{
 }
 ///an attack bouns can be a regular bonus or DC
 #[derive(Debug, Eq, PartialEq,Clone,PartialOrd,Ord,Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum AtkBonus{
     Bonus(i64),
     DC(i64),
@@ -152,6 +159,7 @@ impl Default for AtkBonus{
 }
 ///an attack is a string, AtkBonus, and damage
 #[derive(Debug, Eq, PartialEq, Clone,PartialOrd,Ord,Default,Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Attack{
     name: String,
     bonus: AtkBonus,
@@ -184,6 +192,7 @@ impl Attack{
 }
 ///an item has a quantity and a name
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Item{
     quantity: i64,
     name: String,
@@ -201,6 +210,7 @@ impl Item{
 }
 ///We store all spells of the same level in the same SpellLevel struct
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SpellLevel{
     level: i64,
     spells: Vec<String>
@@ -221,6 +231,7 @@ impl SpellLevel{
 }
 ///a spell list has spells of several levels, but with a casting class, ability, save dc, and attack bonus
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SpellList{
     pub levels: Vec<SpellLevel>,
     casting_class: String,
@@ -250,6 +261,7 @@ impl SpellList{
 }
 ///a damage multiplier has Immunity, Resistence, Vulnerability, each with a string damage type
 #[derive(Debug, Eq, PartialEq,Clone,Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DamageMult{
     Immune(String),
     Resist(String),
@@ -257,6 +269,7 @@ pub enum DamageMult{
 }
 ///a struct for parsing the character into
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Character{
     pub char_name: String,
     pub classes: Vec<Class>,

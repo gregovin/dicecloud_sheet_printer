@@ -267,6 +267,7 @@ dependencies = [
  "genpdf",
  "owned_chars",
  "reqwest",
+ "serde",
  "serde_json",
  "textwrap",
  "tokio",
