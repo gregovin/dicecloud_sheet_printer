@@ -17,6 +17,18 @@ impl AbilityScore{
     pub fn name(&self)->&String{
         &self.name
     }
+    /// get an ability score's modifier
+    /// #example
+    /// ```
+    /// use dicecloud_sheet_printer::holding_structs::{AbilityScore};
+    ///
+    /// let sten = AbilityScore::new("Strength".to_string(),14);
+    /// let con = AbilityScore::new("Constitution".to_string(),11);
+    /// let dex = AbilityScore::new("Dexterity".to_string(),9);
+    /// assert_eq!(sten.modifier(),2);
+    /// assert_eq!(con.modifier(),0);
+    /// assert_eq!(dex.modifier(),-1);
+    /// ```
     pub fn modifier(&self)->i64{
         self.score/2 -5
     }
@@ -166,24 +178,40 @@ pub struct Attack{
     damage: String
 }
 impl Attack{
+    /// returns the name of the attack
     pub fn name(&self)->&String{
         &self.name
     }
+    /// returns the attack's bonus
     pub fn bonus(&self)->&AtkBonus{
         &self.bonus
     }
+    /// returns the bonus as a string
     pub fn bonus_as_string(&self)->String{
         self.bonus.to_string()
     }
+    /// returns the damage
     pub fn damage(&self)->&String{
         &self.damage
     }
     pub fn new(name: String,bonus: AtkBonus,damage: String)->Attack{
         Attack { name , bonus, damage }
     }
+    ///adds damage to the attack
+    /// #Example
+    /// ```
+    /// use dicecloud_sheet_printer::holding_structs::{Attack, AtkBonus};
+    /// let mut atk1 = Attack::new("test".to_string(),AtkBonus::Bonus(0),"1d8+3 [fire]".to_string());
+    /// let mut atk2 = Attack::new("test".to_string(),AtkBonus::Bonus(0),String::new());
+    /// atk1.add_dmg("4 [pir]".to_string());
+    /// atk2.add_dmg("4 [pir]".to_string());
+    ///
+    /// assert_eq!(atk1.damage(),"1d8+3 [fire] 4 [pir]");
+    /// assert_eq!(atk2.damage(),"4 [pir]");
+    /// ```
     pub fn add_dmg(&mut self, dmg: String){
         if !self.damage.is_empty(){
-            let _= write!(self.damage,", {}",dmg);
+            let _= write!(self.damage," {}",dmg);
         }
         else{
             self.damage=dmg;
@@ -300,6 +328,8 @@ pub struct Character{
 }
 
 impl Character{
+    /// #Panics
+    /// when properties do not follow the expected structure, (ie a core stat can't be found, or a property does not have an expected entry), the function will panic
     pub fn new(char_json: Value,race_decoder: Value)->Character{
         let char_name=&char_json["creatures"][0]["name"];
         if char_name == &Value::Null{
