@@ -1,9 +1,10 @@
-use serde_json::Value;core
+use serde_json::Value;
 use std::cmp::{PartialOrd,Ordering,Ord};
 use std::collections::HashMap;
 use owned_chars::OwnedChars;
 use std::fmt::{self,Write};
 ///defines an ability score by the value(score) and name
+#[derive(Clone,Eq,PartialEq,Hash,Debug,Default)]
 pub struct AbilityScore{
     score: i64,
     name: String,
@@ -23,15 +24,16 @@ impl AbilityScore{
     }
 }
 ///Types of proficiency listed
-#[derive(Debug, Eq, PartialEq,PartialOrd,Ord)]
+#[derive(Debug, Eq, PartialEq,PartialOrd,Ord,Clone,Hash,Default)]
 pub enum Proficiency {
+    #[default]
     None,
     Half,
     Profficient,
     Expert,
 }
 ///A skill is a bonus, name, and prof
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 pub struct Skill{
     bonus: i64,
     name: String,
@@ -68,6 +70,7 @@ impl Ord for Skill{
     }
 }
 ///A class is a name and a level
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 pub struct Class{
     name: String,
     level: i64,
@@ -84,6 +87,7 @@ impl Class{
     }
 }
 ///a background is a name and a description
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 pub struct Background{
     name: String,
     description: String,
@@ -100,6 +104,7 @@ impl Background{
     }
 }
 ///a dice has a size, and we include the number
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 pub struct Die{
     size: i64,
     num: i64,
@@ -121,7 +126,7 @@ impl fmt::Display for Die{
     }
 }
 ///an attack bouns can be a regular bonus or DC
-#[derive(Debug, Eq, PartialEq,Clone,PartialOrd,Ord)]
+#[derive(Debug, Eq, PartialEq,Clone,PartialOrd,Ord,Hash)]
 pub enum AtkBonus{
     Bonus(i64),
     DC(i64),
@@ -142,8 +147,11 @@ impl fmt::Display for AtkBonus{
         }
     }
 }
+impl Default for AtkBonus{
+    fn default()->Self{AtkBonus::Bonus(0)}
+}
 ///an attack is a string, AtkBonus, and damage
-#[derive(Debug, Eq, PartialEq, Clone,PartialOrd,Ord)]
+#[derive(Debug, Eq, PartialEq, Clone,PartialOrd,Ord,Default,Hash)]
 pub struct Attack{
     name: String,
     bonus: AtkBonus,
@@ -175,6 +183,7 @@ impl Attack{
     }
 }
 ///an item has a quantity and a name
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 pub struct Item{
     quantity: i64,
     name: String,
@@ -191,6 +200,7 @@ impl Item{
     }
 }
 ///We store all spells of the same level in the same SpellLevel struct
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 pub struct SpellLevel{
     level: i64,
     spells: Vec<String>
@@ -210,6 +220,7 @@ impl SpellLevel{
     }
 }
 ///a spell list has spells of several levels, but with a casting class, ability, save dc, and attack bonus
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 pub struct SpellList{
     pub levels: Vec<SpellLevel>,
     casting_class: String,
@@ -238,12 +249,14 @@ impl SpellList{
     }
 }
 ///a damage multiplier has Immunity, Resistence, Vulnerability, each with a string damage type
+#[derive(Debug, Eq, PartialEq,Clone,Hash)]
 pub enum DamageMult{
     Immune(String),
     Resist(String),
     Vuln(String),
 }
 ///a struct for parsing the character into
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 pub struct Character{
     pub char_name: String,
     pub classes: Vec<Class>,
@@ -399,7 +412,7 @@ impl Character{
                 let dmg_type = val["damageType"].as_str().unwrap().to_string();
                 let dmg_string = format!("{}{}{}[{}]",dmg_die,if dmg_bonus>=0 {"+"} else {""},
                 dmg_bonus,damage_type_abreviator(dmg_type));
-                match attacks_dict.mut(&par_id){
+                match attacks_dict.get_mut(&par_id){
                     Some(atk)=>atk.add_dmg(dmg_string),
                     None=>{attacks_dict.insert(par_id,Attack::new(String::new(),AtkBonus::Bonus(0),dmg_string));},
                 };
