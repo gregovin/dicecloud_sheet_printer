@@ -509,7 +509,7 @@ async fn main() {
         .styled(style::Style::new().bold().with_font_size(7)));
     let mut features = character.features;
     features.sort();
-    let mut features = features.into_iter;
+    let mut features = features.into_iter();
     for _i in 0..27{
         if let Some(name)=features.next(){
             features_elem=features_elem.element(Paragraph::new(name).aligned(Alignment::Center)
