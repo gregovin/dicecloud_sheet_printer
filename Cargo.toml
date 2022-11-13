@@ -22,3 +22,5 @@ tokio = {version="1.21.2",features = ["macros","rt-multi-thread"]}
 owned_chars = "0.3.2"
 textwrap = {version="0.16.0", features=["hyphenation"]}
 serde = { version = "1.0", optional = true }
+itertools = "0.10.5"
+regex = "1.7.0"

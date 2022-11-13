@@ -224,6 +224,7 @@ impl Attack{
 pub struct Item{
     quantity: i64,
     name: String,
+    plural_name: String,
 }
 impl Item{
     pub fn quantity(&self)->i64{
@@ -232,8 +233,24 @@ impl Item{
     pub fn name(&self)->&String{
         &self.name
     }
-    pub fn new(quantity: i64,name: String)->Item{
-        Item { quantity, name}
+    pub fn plural_name(&self)->&String{
+        &self.plural_name
+    }
+    pub fn new(quantity: i64,name: String,plural_name: String)->Item{
+        Item { quantity, name,plural_name}
+    }
+}
+impl PartialOrd for Item{
+    fn partial_cmp(&self,other: &Item)->Option<Ordering>{
+        if &self.name != other.name(){
+            return self.name.partial_cmp(other.name());
+        }
+        self.quantity.partial_cmp(&other.quantity())
+    }
+}
+impl Ord for Item{
+    fn cmp(&self,other: &Item)->Ordering{
+        self.partial_cmp(other).unwrap()
     }
 }
 ///We store all spells of the same level in the same SpellLevel struct
@@ -295,6 +312,61 @@ pub enum DamageMult{
     Resist(String),
     Vuln(String),
 }
+#[derive(Debug, Eq, PartialEq,Clone,Hash,PartialOrd,Ord,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum ActionType{
+    Free,
+    Reaction,
+    Bonus,
+    #[default]
+    Action,
+    Long
+}
+impl fmt::Display for ActionType{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let out = match self{
+            ActionType::Free => "(fr.) ",
+            ActionType::Reaction => "(rxn) ",
+            ActionType::Bonus => "(bns) ",
+            ActionType::Action =>"",
+            ActionType::Long =>"(ln.) ",
+        };
+        write!(f, "{}", out)
+    }
+}
+#[derive(Debug, Eq, PartialEq,Clone,Hash,PartialOrd,Ord,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Action{
+    name: String,
+    typ: ActionType,
+    uses: i64 //-1=infty
+}
+impl Action{
+    pub fn name(&self)->&String{
+        &self.name
+    }
+    pub fn uses(&self)->i64{
+        self.uses
+    }
+    pub fn typ(&self)->&ActionType{
+        &self.typ
+    }
+    pub fn new(name: String,uses: i64,typ: ActionType)->Action{
+        Action{name, uses,typ}
+    }
+}
+impl fmt::Display for Action{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let nl = format!("{}",self.uses).len();
+        let resources = if self.uses==-1{
+            String::new()
+        } else {
+            let blank = String::from_utf8(vec![b'_'; nl]).expect("never fails");
+            format!("({}/{})",blank,self.uses)
+        };
+        write!(f,"{}{}{}",self.typ,self.name,resources)
+    }
+}
 ///a struct for parsing the character into
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -317,11 +389,11 @@ pub struct Character{
     pub hit_points: i64,
     pub hit_dice: Vec<Die>,
     pub attacks: Vec<Attack>,
-    pub equipped: Vec<Item>,
+    pub actions: Vec<Action>,
+    pub equipment: Vec<Item>,
     pub traits: (String, String, String, String),//Personality, Ideals, Bonds, Flaws
     pub features: Vec<String>,
     pub other_profs: (Vec<String>,Vec<String>,Vec<String>,Vec<String>),//armor,weapon,language, tool
-    pub carried: Vec<Item>,
     pub coins: (i64,i64,i64,i64,i64),//cp,sp,ep,gp,pp
     pub spell_lists: Vec<SpellList>,
     pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64)//1st,2nd,...9th
@@ -351,11 +423,11 @@ impl Character{
         let mut traits = (String::new(),String::new(),String::new(),String::new());
         let mut attacks_dict: HashMap<String,Attack> =HashMap::new();
         let mut attacks: Vec<Attack>=vec![];
+        let mut actions: Vec<Action>=vec![];
         let mut classes: Vec<Class> = vec![];
         let props: &Value = &char_json["creatureProperties"];
         let mut features: Vec<String> = vec![];
-        let mut equipped: Vec<Item> = vec![];
-        let mut carried: Vec<Item> = vec![];
+        let mut equipment: Vec<Item> = vec![];
         let mut hit_dice: Vec<Die> = vec![];
         let mut idx =0;
         let mut background: Background=Background::new(String::new(),String::new());
@@ -440,14 +512,37 @@ impl Character{
                     let size: i64=ds.split('d').collect::<Vec<_>>()[1].parse().unwrap();
                     hit_dice.push(Die::new(size,total));
                 }
-            }else if val["type"].as_str()==Some("action") && val["actionType"].as_str()==Some("attack"){
-                let bns = AtkBonus::Bonus(val["attackRoll"]["value"].as_i64().unwrap());
-                let id = val["_id"].as_str().unwrap().to_string();
-                let dmg = match attacks_dict.get(&id){
-                    Some(atk)=>atk.damage(),
-                    None=>""
-                };
-                attacks_dict.insert(id,Attack::new(val["name"].as_str().unwrap().to_string(),bns,dmg.to_string()));
+            }else if val["type"].as_str()==Some("action"){
+                if val["actionType"].as_str()==Some("attack"){
+                    let bns = AtkBonus::Bonus(val["attackRoll"]["value"].as_i64().unwrap());
+                    let id = val["_id"].as_str().unwrap().to_string();
+                    let dmg = match attacks_dict.get(&id){
+                        Some(atk)=>atk.damage(),
+                        None=>""
+                    };
+                    attacks_dict.insert(id,Attack::new(val["name"].as_str().unwrap().to_string(),bns,dmg.to_string()));
+                } else if val["disabled"].as_bool()!=Some(true){
+                    let typ = val["actionType"].as_str();
+                    let name = val["name"].as_str().unwrap().to_string();
+                    let mut uses = -1;
+                    if let Some(k)=val["uses"]["value"].as_i64(){
+                        uses=k;
+                    }
+                    let typ = if typ==Some("free"){
+                        ActionType::Free
+                    } else if typ==Some("bonus"){
+                        ActionType::Bonus
+                    } else if typ==Some("reaction"){
+                        ActionType::Reaction
+                    } else if typ==Some("action"){
+                        ActionType::Action
+                    } else if typ==Some("long"){
+                        ActionType::Long
+                    } else {
+                        ActionType::default()
+                    };
+                    actions.push(Action{name,uses,typ});
+                }
             }else if val["type"].as_str()==Some("damage"){
                 let par_id = val["parent"]["id"].as_str().unwrap().to_string();
                 let dmg_die = val["amount"]["calculation"].as_str().unwrap();
@@ -462,11 +557,8 @@ impl Character{
             }else if val["type"].as_str()==Some("class"){
                 classes.push(Class::new(val["name"].as_str().unwrap().to_string(),
                     val["level"].as_i64().unwrap()));
-            }else if val["type"].as_str()==Some("Item"){
-                if val["equipped"].as_bool().unwrap(){
-                    equipped.push(Item::new(val["quantity"].as_i64().unwrap(),
-                        val["name"].as_str().unwrap().to_string()));
-                } else if val["name"].as_str().unwrap().contains("piece"){
+            }else if val["type"].as_str()==Some("item"){
+                if val["name"].as_str().unwrap().contains("piece"){
                     let coin_type=val["name"].as_str().unwrap().to_string();
                     if coin_type.contains("Platinum"){
                         coins.4 = val["quantity"].as_i64().unwrap();
@@ -478,13 +570,11 @@ impl Character{
                     } else if coin_type.contains("Copper"){
                         coins.0 = val["quantity"].as_i64().unwrap();
                     }
-                }else {
-                    let q: i64 = match val["quantity"].as_i64(){
-                        Some(k) => k,
-                        None=>continue,
-                    };
-                    carried.push(Item::new(q,
-                    val["name"].as_str().unwrap().to_string()));
+                }else{
+                    let nme = val["name"].as_str().unwrap().to_string();
+                    equipment.push(Item::new(val["quantity"].as_i64().unwrap_or(0),
+                        val["name"].as_str().unwrap().to_string(),
+                        val["plural"].as_str().unwrap_or(&nme).to_string()));
                 }
             }else if val["name"].as_str()==Some("Proficiency Bonus"){
                 prof_bonus=val["total"].as_i64().unwrap();
@@ -534,11 +624,11 @@ impl Character{
             hit_points,
             hit_dice,
             attacks,
-            equipped,
+            actions,
+            equipment,
             traits,
             features,
             other_profs,
-            carried,
             coins,
             spell_lists: vec![],
             spell_slots: (0,0,0,0,0,0,0,0,0)

@@ -4,6 +4,7 @@ use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,
 use std::collections::HashMap;
 use std::{io,process,fs};
 use std::fmt::Write;
+use itertools::Itertools;
 #[tokio::main]
 async fn main() {
     let mut doc = generate_pdf();
@@ -71,7 +72,7 @@ async fn main() {
             xp+=&character.xp.to_string();
         }
     }
-    let mut detail_right = elements::TableLayout::new(vec![1,1,1]);
+    let mut detail_right = elements::TableLayout::new(vec![2,2,1]);
     detail_right.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
     let mut class_str = String::new();
     for class in &character.classes{
@@ -505,12 +506,15 @@ async fn main() {
         .element(flaw)
         .element(elements::Break::new(0.25));
     let mut features_elem= elements::LinearLayout::vertical();
-    features_elem=features_elem.element(Paragraph::new("FEATURES & TRAITS").aligned(Alignment::Center)
+    features_elem=features_elem.element(Paragraph::new("ACTIONS AND FEATURES").aligned(Alignment::Center)
         .styled(style::Style::new().bold().with_font_size(7)));
+    let mut actions = character.actions;
+    actions.sort();
     let mut features = character.features;
     features.sort();
-    let mut features = features.into_iter();
-    for _i in 0..27{
+    let re = regex::Regex::new(r"Pass (Dawn|Dusk|Midnight)").unwrap();
+    let mut features = actions.into_iter().filter(|act| !re.is_match(act.name())).map(|act| act.to_string()).merge(features.into_iter());
+    for _i in 0..26{
         if let Some(name)=features.next(){
             features_elem=features_elem.element(Paragraph::new(name).aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(10)));
@@ -569,6 +573,42 @@ async fn main() {
         )
         .push().expect("failed to add row");
     doc.push(main_sheet);
+    doc.push(elements::PageBreak::new());
+    // page 2 starts
+    let mut page_2 = elements::TableLayout::new(vec![3,1]);
+    let mut equipment = character.equipment;
+    equipment.sort();
+    let mut equipment_elem = elements::LinearLayout::vertical()
+        .element(Paragraph::new("EQUIPMENT").aligned(Alignment::Center)
+            .styled(style::Style::new().bold().with_font_size(7)));
+    for itm in equipment{
+        let q = itm.quantity();
+        let nme = if q==1{
+            itm.name()
+        } else {
+            itm.plural_name()
+        };
+        equipment_elem = equipment_elem.element(Paragraph::new(format!("{} {}",q,nme))
+                .aligned(Alignment::Center)
+                .styled(style::Style::new().with_font_size(10))
+            );
+    }
+    let mut features_elem2= elements::LinearLayout::vertical();
+    features_elem2=features_elem2.element(Paragraph::new("OTHER FEATURES & TRAITS").aligned(Alignment::Center)
+        .styled(style::Style::new().bold().with_font_size(7)));
+    for feat in features{
+        features_elem2=features_elem2.element(Paragraph::new(feat).aligned(Alignment::Center)
+            .styled(style::Style::new().with_font_size(10)));
+    }
+    page_2
+        .row()
+        .element(elements::LinearLayout::vertical()
+            .element(equipment_elem.padded(1).framed().padded(1))
+            .element(features_elem2.padded(1).framed().padded(1))
+        )
+        .element(Paragraph::new("").framed().padded(1))
+        .push().expect("Failed to add row");
+    doc.push(page_2);
     println!("Rendering pdf...(this may take a moment)");
     doc.render_to_file("./character_sheet.pdf").expect("Failed to write output file");
 }
@@ -618,7 +658,7 @@ fn vertical_pad(txt: String, width: usize, lines: usize)->elements::LinearLayout
             out=out.element(Paragraph::new(thing.to_mut().as_str()).aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(10)));
         } else {
-            out=out.element(elements::Break::new(1.0));
+            out=out.element(elements::Break::new(1.0).styled(style::Style::new().with_font_size(10)));
         }
     }
     out
