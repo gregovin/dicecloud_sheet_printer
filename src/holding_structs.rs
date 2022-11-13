@@ -1,6 +1,7 @@
 use serde_json::Value;
 use std::cmp::{PartialOrd,Ordering,Ord};
 use std::collections::HashMap;
+use genpdf::{RenderResult,Element,Context,render::Area,style::Style,error::Error,Mm,Size};
 use owned_chars::OwnedChars;
 use std::fmt::{self,Write};
 ///defines an ability score by the value(score) and name
@@ -334,7 +335,7 @@ impl fmt::Display for ActionType{
         write!(f, "{}", out)
     }
 }
-#[derive(Debug, Eq, PartialEq,Clone,Hash,PartialOrd,Ord,Default)]
+#[derive(Debug, Eq, PartialEq,Clone,Hash,PartialOrd,Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Action{
     name: String,
@@ -365,6 +366,11 @@ impl fmt::Display for Action{
             format!("({}/{})",blank,self.uses)
         };
         write!(f,"{}{}{}",self.typ,self.name,resources)
+    }
+}
+impl Default for Action{
+    fn default()->Action{
+        Action{name:String::default(),typ: ActionType::default(), uses:-1}
     }
 }
 ///a struct for parsing the character into
@@ -670,4 +676,34 @@ fn race_translator(race: String,race_decoder: Value)-> String{
         out.push(ch);
     }
     out.into_iter().collect()
+}
+
+pub struct Hline{
+
+}
+impl Hline{
+    pub fn new()->Hline{
+        Hline{}
+    }
+}
+impl Element for Hline{
+    fn render(
+        &mut self, 
+        context: &Context, 
+        area: Area<'_>, 
+        style: Style
+    ) -> Result<RenderResult, Error>{
+        let sz=area.size();
+        let zero = Mm::from(0);
+        let small = Mm::from(0.05);
+        let p1= genpdf::Position{x:zero,y:small};
+        let p2= genpdf::Position{x:sz.width,y:small};
+        area.draw_line(vec![p1,p2],style);
+        let ataken = if Mm::from(0.1)<sz.height{
+            Mm::from(0.1)
+        } else{
+            sz.height
+        };
+        Ok(RenderResult{size:Size{width:sz.width,height:ataken},has_more:false})
+    }
 }

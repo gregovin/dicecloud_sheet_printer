@@ -506,18 +506,25 @@ async fn main() {
         .element(flaw)
         .element(elements::Break::new(0.25));
     let mut features_elem= elements::LinearLayout::vertical();
-    features_elem=features_elem.element(Paragraph::new("ACTIONS AND FEATURES").aligned(Alignment::Center)
+    features_elem=features_elem.element(Paragraph::new("ACTIONS").aligned(Alignment::Center)
         .styled(style::Style::new().bold().with_font_size(7)));
     let mut actions = character.actions;
     actions.sort();
-    let mut features = character.features;
-    features.sort();
+    actions.push(Action::default());
+    let mut act_features = character.features;
+    act_features.sort();
     let re = regex::Regex::new(r"Pass (Dawn|Dusk|Midnight)").unwrap();
-    let mut features = actions.into_iter().filter(|act| !re.is_match(act.name())).map(|act| act.to_string()).merge(features.into_iter());
+    let mut features= actions.into_iter().filter(|act| !re.is_match(act.name())).map(|act| act.to_string()).merge(act_features);
     for _i in 0..26{
         if let Some(name)=features.next(){
+            if &name==&String::default(){
+                features_elem=features_elem.element(Hline::new());
+                features_elem=features_elem.element(Paragraph::new("FEATURES").aligned(Alignment::Center)
+                    .styled(style::Style::new().bold().with_font_size(7)))
+            } else {
             features_elem=features_elem.element(Paragraph::new(name).aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(10)));
+            }
         } else {
             features_elem=features_elem.element(elements::Break::new(1.0).styled(style::Style::new().with_font_size(10)));
         }
@@ -597,8 +604,12 @@ async fn main() {
     features_elem2=features_elem2.element(Paragraph::new("OTHER FEATURES & TRAITS").aligned(Alignment::Center)
         .styled(style::Style::new().bold().with_font_size(7)));
     for feat in features{
-        features_elem2=features_elem2.element(Paragraph::new(feat).aligned(Alignment::Center)
-            .styled(style::Style::new().with_font_size(10)));
+        if &feat==&String::default(){
+            features_elem2=features_elem2.element(Hline::new());
+        } else {
+            features_elem2=features_elem2.element(Paragraph::new(feat).aligned(Alignment::Center)
+                .styled(style::Style::new().with_font_size(10)));
+        }
     }
     page_2
         .row()
