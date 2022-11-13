@@ -9,3 +9,7 @@ when run via the command line\(there is no release yet, so you'll have to compil
 
 ## Stuff that needs to be added before release
 Only prints the first page. Planning to add an equipment section on the first half of the second, and then an actions/extra features/background detail section for the other half. And then I have to deal with spells
+
+## How to compile it yourself
+You will need the rust toolchain, which can be installed following these [instructions](https://doc.rust-lang.org/book/ch01-01-installation.html)
+Clone the repo, then cd into it and run `cargo run`. If you get a weird error on linux, install the openssl-dev package and try again. At this point it should work (tm)
