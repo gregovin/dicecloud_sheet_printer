@@ -671,8 +671,16 @@ async fn main() {
         )
         .push().expect("Failed to add row");
     doc.push(page_2);
+    let mut out_path = String::new();
+    println!("What would you like the output file to be?");
+    stdin.read_line(&mut out_path).expect("Failed to get output path");
+    let mut out_path = out_path.trim().to_string();
+    if !out_path.ends_with(".pdf"){
+        out_path+=".pdf";
+    }
+    out_path = "./sheet_outputs/".to_string()+&out_path;
     println!("Rendering pdf...(this may take a moment)");
-    doc.render_to_file("./character_sheet.pdf").expect("Failed to write output file");
+    doc.render_to_file(out_path).expect("Failed to write output file");
 }
 fn element_from_score(score: &AbilityScore)->elements::LinearLayout{
     elements::LinearLayout::vertical()
