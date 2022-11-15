@@ -526,7 +526,7 @@ impl Character{
                     hit_dice.push(Die::new(size,total));
                 }
             }else if val["type"].as_str()==Some("action"){
-                if val["actionType"].as_str()==Some("attack"){
+                if val["actionType"].as_str()==Some("attack") && val["inactive"].as_bool()!=Some(true){
                     let bns = AtkBonus::Bonus(val["attackRoll"]["value"].as_i64().unwrap());
                     let id = val["_id"].as_str().unwrap().to_string();
                     let dmg = match attacks_dict.get(&id){
@@ -534,7 +534,7 @@ impl Character{
                         None=>""
                     };
                     attacks_dict.insert(id,Attack::new(val["name"].as_str().unwrap().to_string(),bns,dmg.to_string()));
-                } else if val["disabled"].as_bool()!=Some(true){
+                } else if val["inactive"].as_bool()!=Some(true){
                     let typ = val["actionType"].as_str();
                     let name = val["name"].as_str().unwrap().to_string();
                     let mut uses = -1;

@@ -511,21 +511,26 @@ async fn main() {
     let mut actions = character.actions;
     actions.sort();
     actions.push(Action::default());
-    let mut act_features = character.features;
-    act_features.sort();
+    let mut features = character.features;
+    features.sort();
     let re = regex::Regex::new(r"Pass (Dawn|Dusk|Midnight)").unwrap();
-    let mut features= actions.into_iter().filter(|act| !re.is_match(act.name())).map(|act| act.to_string()).merge(act_features);
+    let mut actions_itr= actions.iter().filter(|act| !re.is_match(act.name())).map(|act| act.to_string());
+    let mut features = features.into_iter().filter(|feat| !actions.iter().any(|x| feat==x.name()));
+
     for _i in 0..26{
-        if let Some(name)=features.next(){
+        if let Some(name)=actions_itr.next(){
             if &name==&String::default(){
                 features_elem=features_elem.element(Hline::new());
                 features_elem=features_elem.element(Paragraph::new("FEATURES").aligned(Alignment::Center)
                     .styled(style::Style::new().bold().with_font_size(7)))
             } else {
+                features_elem=features_elem.element(Paragraph::new(name).aligned(Alignment::Center)
+                    .styled(style::Style::new().with_font_size(10)));
+            }
+        } else if let Some(name)=features.next(){
             features_elem=features_elem.element(Paragraph::new(name).aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(10)));
-            }
-        } else {
+        }else {
             features_elem=features_elem.element(elements::Break::new(1.0).styled(style::Style::new().with_font_size(10)));
         }
 
@@ -603,13 +608,19 @@ async fn main() {
     let mut features_elem2= elements::LinearLayout::vertical();
     features_elem2=features_elem2.element(Paragraph::new("OTHER FEATURES & TRAITS").aligned(Alignment::Center)
         .styled(style::Style::new().bold().with_font_size(7)));
-    for feat in features{
-        if &feat==&String::default(){
+    while let Some(name)=actions_itr.next(){
+        if &name==&String::default(){
             features_elem2=features_elem2.element(Hline::new());
+            features_elem2=features_elem2.element(Paragraph::new("FEATURES").aligned(Alignment::Center)
+                .styled(style::Style::new().bold().with_font_size(7)))
         } else {
-            features_elem2=features_elem2.element(Paragraph::new(feat).aligned(Alignment::Center)
+            features_elem2=features_elem2.element(Paragraph::new(name).aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(10)));
         }
+    }
+    while let Some(name)=features.next(){
+        features_elem2=features_elem2.element(Paragraph::new(name).aligned(Alignment::Center)
+            .styled(style::Style::new().with_font_size(10)));
     }
     let coins = character.coins;
     let mut equiptable = elements::TableLayout::new(vec![1,9]);
