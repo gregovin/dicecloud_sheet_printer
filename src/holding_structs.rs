@@ -402,7 +402,8 @@ pub struct Character{
     pub other_profs: (Vec<String>,Vec<String>,Vec<String>,Vec<String>),//armor,weapon,language, tool
     pub coins: (i64,i64,i64,i64,i64),//cp,sp,ep,gp,pp
     pub spell_lists: Vec<SpellList>,
-    pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64)//1st,2nd,...9th
+    pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64),//1st,2nd,...9th
+    pub char_img: String
 }
 
 impl Character{
@@ -440,6 +441,12 @@ impl Character{
         let mut race: String = String::new();
         let mut coins = (0,0,0,0,0);
         let mut other_profs: (Vec<String>,Vec<String>,Vec<String>,Vec<String>) = (vec![],vec![],vec![],vec![]);
+        let mut char_img = String::new();
+        if let Some(url) =char_json["creatures"][0]["avatarPicture"].as_str(){
+            char_img = url.to_string();
+        } else if let Some(url) = char_json["creatures"][0]["picture"].as_str(){
+            char_img = url.to_string();
+        }
         while props[idx] != Value::Null{
             let val = &props[idx];
             if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("ability"){
@@ -637,7 +644,8 @@ impl Character{
             other_profs,
             coins,
             spell_lists: vec![],
-            spell_slots: (0,0,0,0,0,0,0,0,0)
+            spell_slots: (0,0,0,0,0,0,0,0,0),
+            char_img
         }
     }
 }

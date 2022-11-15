@@ -2,8 +2,13 @@ use std::collections::HashMap;
 use serde_json::Value;
 use genpdf::{Element, Alignment};
 use genpdf::{elements,fonts, style};
+use image::io::Reader as ImageReader;
+use image::imageops::FilterType;
+use std::io::Cursor;
 use std::process;
+
 pub mod holding_structs;
+
 
 pub async fn get_token(username: String, psw: String)->String{
     let client = reqwest::Client::new();
@@ -43,6 +48,17 @@ pub async fn get_character(token: String, character_url: String)->Value{
         process::exit(1);
     }
     out
+}
+pub async fn get_img_from_url(img_url: String)->image::DynamicImage{
+    let client = reqwest::Client::new();
+    let res_bytes = client.get(img_url)
+        .send()
+        .await
+        .expect("Failed to send request")
+        .bytes()
+        .await
+        .expect("Failed to get image bytes");
+    ImageReader::new(Cursor::new(res_bytes)).with_guessed_format().expect("Failed to parse format").decode().expect("failed to decode").resize(540,2000,FilterType::CatmullRom)
 }
 pub fn get_char_url(caracter_id: String) -> String{
     format!("https://beta.dicecloud.com/api/creature/{}",caracter_id.trim())

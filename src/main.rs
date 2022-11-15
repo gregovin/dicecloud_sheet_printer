@@ -1,6 +1,6 @@
 use genpdf::{Element, Alignment};
 use genpdf::{elements::{self,Paragraph},fonts, style};
-use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,bns_translator,holding_structs::*};
+use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,bns_translator,get_img_from_url,holding_structs::*};
 use std::collections::HashMap;
 use std::{io,process,fs};
 use std::fmt::Write;
@@ -611,13 +611,50 @@ async fn main() {
                 .styled(style::Style::new().with_font_size(10)));
         }
     }
+    let img = get_img_from_url(character.char_img).await;
+    let coins = character.coins;
+    let mut equiptable = elements::TableLayout::new(vec![1,9]);
+    equiptable.row()
+        .element(elements::LinearLayout::vertical()
+            .element(elements::Break::new(1.0))
+            .element(Paragraph::new("CP").aligned(Alignment::Center)
+                .styled(style::Style::new().bold().with_font_size(7)))
+            .element(Paragraph::new(&coins.0.to_string()).aligned(Alignment::Center).padded(1).framed().padded(1))
+            .element(elements::Break::new(0.5))
+            .element(Paragraph::new("SP").aligned(Alignment::Center)
+                .styled(style::Style::new().bold().with_font_size(7)))
+            .element(Paragraph::new(&coins.1.to_string()).aligned(Alignment::Center).padded(1).framed().padded(1))
+            .element(elements::Break::new(0.5))
+            .element(Paragraph::new("EP").aligned(Alignment::Center)
+                .styled(style::Style::new().bold().with_font_size(7)))
+            .element(Paragraph::new(&coins.2.to_string()).aligned(Alignment::Center).padded(1).framed().padded(1))
+            .element(elements::Break::new(0.5))
+            .element(Paragraph::new("GP").aligned(Alignment::Center)
+                .styled(style::Style::new().bold().with_font_size(7)))
+            .element(Paragraph::new(&coins.3.to_string()).aligned(Alignment::Center).padded(1).framed().padded(1))
+            .element(elements::Break::new(0.5))
+            .element(Paragraph::new("PP").aligned(Alignment::Center)
+                .styled(style::Style::new().bold().with_font_size(7)))
+            .element(Paragraph::new(&coins.4.to_string()).aligned(Alignment::Center).padded(1).framed().padded(1))
+            )
+        .element(equipment_elem.padded(1))
+        .push().expect("Failed to add row");
     page_2
         .row()
         .element(elements::LinearLayout::vertical()
-            .element(equipment_elem.padded(1).framed().padded(1))
+            .element(equiptable.framed().padded(1))
             .element(features_elem2.padded(1).framed().padded(1))
         )
-        .element(Paragraph::new("").framed().padded(1))
+        .element(elements::LinearLayout::vertical()
+            .element(elements::Image::from_dynamic_image(img).expect("Image fail")
+                .with_scale(genpdf::Scale{x:0.9,y:0.9})
+                .with_alignment(Alignment::Center))
+            .element(Paragraph::new("CHARACTER PORTRAIT").aligned(Alignment::Center)
+                .styled(style::Style::new().bold().with_font_size(7)))
+            .padded(1)
+            .framed()
+            .padded(1)
+        )
         .push().expect("Failed to add row");
     doc.push(page_2);
     println!("Rendering pdf...(this may take a moment)");
