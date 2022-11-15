@@ -470,7 +470,7 @@ impl Character{
                         val["value"].as_i64().unwrap(),prof));
                 } else if val["skillType"].as_str()==Some("skill"){
                     let prf=val["proficiency"].as_f64();
-                    let prof = if prf ==Some(0.5){
+                    let prof = if prf!= None && prf.unwrap() >= 0.48 && prf.unwrap() <= 0.52{
                         Proficiency::Half
                     } else if prf == Some(1.0){
                         Proficiency::Profficient
