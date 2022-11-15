@@ -611,7 +611,6 @@ async fn main() {
                 .styled(style::Style::new().with_font_size(10)));
         }
     }
-    let img = get_img_from_url(character.char_img).await;
     let coins = character.coins;
     let mut equiptable = elements::TableLayout::new(vec![1,9]);
     equiptable.row()
@@ -640,6 +639,18 @@ async fn main() {
         .element(equipment_elem.padded(1))
         .push().expect("Failed to add row");
     let background = character.background;
+    let mut img_elem = elements::LinearLayout::vertical();
+    if !character.char_img.is_empty(){
+        let img = get_img_from_url(character.char_img).await;
+        img_elem=img_elem.element(elements::Image::from_dynamic_image(img).expect("Image fail")
+            .with_scale(genpdf::Scale{x:0.9,y:0.9})
+            .with_alignment(Alignment::Center));
+
+    } else {
+        img_elem=img_elem.element(elements::Break::new(6.0));
+    }
+    img_elem=img_elem.element(Paragraph::new("CHARACTER PORTRAIT").aligned(Alignment::Center)
+        .styled(style::Style::new().bold().with_font_size(7)));
     page_2
         .row()
         .element(elements::LinearLayout::vertical()
@@ -647,12 +658,7 @@ async fn main() {
             .element(features_elem2.padded(1).framed().padded(1))
         )
         .element(elements::LinearLayout::vertical()
-                .element(elements::LinearLayout::vertical()
-                    .element(elements::Image::from_dynamic_image(img).expect("Image fail")
-                        .with_scale(genpdf::Scale{x:0.9,y:0.9})
-                        .with_alignment(Alignment::Center))
-                    .element(Paragraph::new("CHARACTER PORTRAIT").aligned(Alignment::Center)
-                        .styled(style::Style::new().bold().with_font_size(7)))
+                .element(img_elem
                     .padded(1)
                     .framed()
                     .padded(1)
