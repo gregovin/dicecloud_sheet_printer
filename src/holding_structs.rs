@@ -698,10 +698,10 @@ impl Character{
                         val["plural"].as_str().unwrap_or(&nme).to_string()));
                 }
             }else if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("spellSlot") {
-                if val["variableName"].as_str().unwrap().contains("slotLevel") && val["inactive"].as_bool() !=Some(true){
+                if val["inactive"].as_bool() !=Some(true){
                     let lvl = val["spellSlotLevel"]["value"].as_i64().unwrap();
                     let num = val["value"].as_i64().unwrap();
-                    spell_slots[(lvl-1) as usize]=num;
+                    spell_slots[(lvl-1) as usize]+=num;
                 }
             }else if val["name"].as_str()==Some("Proficiency Bonus"){
                 prof_bonus=val["total"].as_i64().unwrap();
