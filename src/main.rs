@@ -2,9 +2,9 @@ use genpdf::{Element, Alignment};
 use genpdf::{elements::{self,Paragraph},fonts, style};
 use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,bns_translator,get_img_from_url,holding_structs::*};
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::{io,process,fs};
 use std::fmt::Write;
-use itertools::Itertools;
 #[tokio::main]
 async fn main() {
     let mut doc = generate_pdf();
@@ -695,9 +695,44 @@ async fn main() {
     if !out_path.ends_with(".pdf"){
         out_path+=".pdf";
     }
+    let spl_lists = character.spell_lists;
+    let spl_slots = character.spell_slots;
+    if !spl_lists.is_empty(){
+        doc.push(elements::PageBreak::new());
+        doc.push(elements::Paragraph::new("SPELLS").styled(style::Style::new().bold()));
+        let mut spell_slots_table = elements::TableLayout::new(vec![1,1,1,1,1,1,1,1,1]);
+        let slt_fmt = style::Style::new().bold().with_font_size(7);
+        spell_slots_table.row()
+            .element(spell_slot_elem(&spl_slots, 1,symbol,slt_fmt).padded(1).framed())
+            .element(spell_slot_elem(&spl_slots, 2,symbol,slt_fmt).padded(1).framed())
+            .element(spell_slot_elem(&spl_slots, 3,symbol,slt_fmt).padded(1).framed())
+            .element(spell_slot_elem(&spl_slots, 4,symbol,slt_fmt).padded(1).framed())
+            .element(spell_slot_elem(&spl_slots, 5,symbol,slt_fmt).padded(1).framed())
+            .element(spell_slot_elem(&spl_slots, 6,symbol,slt_fmt).padded(1).framed())
+            .element(spell_slot_elem(&spl_slots, 7,symbol,slt_fmt).padded(1).framed())
+            .element(spell_slot_elem(&spl_slots, 8,symbol,slt_fmt).padded(1).framed())
+            .element(spell_slot_elem(&spl_slots, 9,symbol,slt_fmt).padded(1).framed())
+            .push().expect("failed to add row");
+        doc.push(spell_slots_table);
+    }
     out_path = "./sheet_outputs/".to_string()+&out_path;
     println!("Rendering pdf...(this may take a moment)");
     doc.render_to_file(out_path).expect("Failed to write output file");
+}
+fn row_from_spell(spell_table: &mut elements::TableLayout, spl: &Spell){
+    let scl: String = spl.school().chars().take(4).collect();
+    let material: String = spl.material().chars().take(20).collect();
+    let sty = style::Style::new().with_font_size(10);
+    spell_table
+        .row()
+        .element(Paragraph::new(spl.name()).styled(sty))
+        .element(Paragraph::new(format!("{}.",scl)).styled(sty))
+        .element(Paragraph::new(&spl.casting_time().to_string()).styled(sty))
+        .element(Paragraph::new(spl.range()).styled(sty))
+        .element(Paragraph::new(&spl.vscr_to_string()).styled(sty))
+        .element(Paragraph::new(spl.duration()).styled(sty))
+        .element(Paragraph::new(material).styled(sty))
+        .push().expect("failed to add row");
 }
 fn element_from_score(score: &AbilityScore)->elements::LinearLayout{
     elements::LinearLayout::vertical()
@@ -749,4 +784,11 @@ fn vertical_pad(txt: String, width: usize, lines: usize)->elements::LinearLayout
         }
     }
     out
+}
+fn spell_slot_elem(spell_slots: &[i64],level: i64, symbol: style::Style, slt: style::Style)-> elements::LinearLayout{
+    let ordinal = if level ==1{"ST"} else if level==2{"ND"} else if level == 3{"RD"} else {"TH"};
+    elements::LinearLayout::vertical()
+        .element(Paragraph::new(format!("{}{} LEVEL",level, ordinal)).aligned(Alignment::Center).styled(slt))
+        .element(Paragraph::new(vec!['⭘'; spell_slots[(level-1) as usize].try_into().unwrap()].into_iter().collect::<String>())
+            .aligned(Alignment::Center).styled(symbol.with_font_size(10)))
 }

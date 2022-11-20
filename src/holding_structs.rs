@@ -254,55 +254,113 @@ impl Ord for Item{
         self.partial_cmp(other).unwrap()
     }
 }
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default,PartialOrd,Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Spell{
+    name: String,
+    level: i64,
+    casting_time: ActionType,
+    duration: String,
+    school: String,
+    range: String,
+    vscr: (bool,bool,bool,bool),
+    material: String
+}
+impl Spell{
+    pub fn name(&self)->&String{
+        &self.name
+    }
+    pub fn level(&self)->i64{
+        self.level
+    }
+    pub fn casting_time(&self)->&ActionType{
+        &self.casting_time
+    }
+    pub fn duration(&self)->&String{
+        &self.duration
+    }
+    pub fn school(&self)->&String{
+        &self.school
+    }
+    pub fn range(&self)->&String{
+        &self.range
+    }
+    pub fn vscr(&self)->(bool,bool,bool,bool){
+        self.vscr
+    }
+    pub fn vscr_to_string(&self)->String{
+        let v = if self.vscr.0{"v"} else {""};
+        let s = if self.vscr.1{"s"} else {""};
+        let c = if self.vscr.2{"c"} else {""};
+        let r = if self.vscr.3{"r"} else {""};
+        format!("{}{}{}{}",v,s,c,r)
+    }
+    pub fn material(&self)->&String{
+        &self.material
+    }
+    pub fn new(name: String, level: i64, casting_time: ActionType, duration: String, school: String, range: String, vscr: (bool,bool,bool,bool),material: String)->Spell{
+        Spell{name,level,casting_time,duration,school,range,vscr,material}
+    }
+}
 ///We store all spells of the same level in the same SpellLevel struct
-#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default,PartialOrd,Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SpellLevel{
     level: i64,
-    spells: Vec<String>
+    spells: Vec<Spell>
 }
 impl SpellLevel{
     pub fn lvl(&self)->i64{
         self.level
     }
-    pub fn spells(&self)->&Vec<String>{
+    pub fn spells(&self)->&Vec<Spell>{
         &self.spells
     }
-    pub fn new(level: i64, spells: Vec<String>)->SpellLevel{
+    pub fn new(level: i64, spells: Vec<Spell>)->SpellLevel{
         SpellLevel { level, spells }
     }
-    pub fn add_spell(&mut self,spell: String){
+    pub fn add_spell(&mut self,spell: Spell){
         self.spells.push(spell);
     }
 }
 ///a spell list has spells of several levels, but with a casting class, ability, save dc, and attack bonus
-#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[derive(Debug, Eq, PartialEq,Clone,Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SpellList{
-    pub levels: Vec<SpellLevel>,
-    casting_class: String,
-    casting_ability: String,
-    save_dc: i64,
-    atk_bonus: i64,
+    pub levels: HashMap<i64,SpellLevel>,
+    pub name: String,
+    pub save_dc: i64,
+    pub atk_bonus: i64,
+    pub max_prepared: i64
 }
 impl SpellList{
-    pub fn levels(&self)->&Vec<SpellLevel>{
-        &self.levels
+    pub fn new(levels: HashMap<i64,SpellLevel>,name: String,save_dc: i64, atk_bonus: i64, max_prepared: i64)->SpellList{
+        SpellList{levels, name, save_dc, atk_bonus,max_prepared}
     }
-    pub fn class(&self)->&String{
-        &self.casting_class
+    fn max_lvl(&self)->i64{
+        self.levels.iter().fold(0,|mx,val| if val.1.lvl()>mx {val.1.lvl()} else {mx})
     }
-    pub fn ability(&self)->&String{
-        &self.casting_ability
+}
+impl PartialOrd for SpellList{
+    fn partial_cmp(&self,other: &SpellList)->Option<Ordering>{
+        let own_lvl = self.max_lvl();
+        let other_lvl = other.max_lvl();
+        if self.max_prepared != other.max_prepared{
+            self.max_prepared.partial_cmp(&other.max_prepared)
+        } else if own_lvl != other_lvl{
+            own_lvl.partial_cmp(&other_lvl)
+        } else if self.name != other.name {
+            self.name.partial_cmp(&other.name)
+        } else if self.save_dc != other.save_dc{
+            self.save_dc.partial_cmp(&other.save_dc)
+        } else {
+            self.atk_bonus.partial_cmp(&other.atk_bonus)
+        }
     }
-    pub fn dc(&self)->i64{
-        self.save_dc
-    }
-    pub fn bonus(&self)->i64{
-        self.atk_bonus
-    }
-    pub fn new(levels: Vec<SpellLevel>,casting_class: String,casting_ability: String,save_dc: i64, atk_bonus: i64)->SpellList{
-        SpellList{levels, casting_class, casting_ability, save_dc, atk_bonus}
+}
+impl Ord for SpellList{
+    fn cmp(&self,other: &SpellList)->Ordering{
+        self.partial_cmp(other).unwrap()
     }
 }
 ///a damage multiplier has Immunity, Resistence, Vulnerability, each with a string damage type
@@ -321,18 +379,18 @@ pub enum ActionType{
     Bonus,
     #[default]
     Action,
-    Long
+    Long(String)
 }
 impl fmt::Display for ActionType{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let out = match self{
-            ActionType::Free => "(fr.) ",
-            ActionType::Reaction => "(rxn) ",
-            ActionType::Bonus => "(bns) ",
-            ActionType::Action =>"",
-            ActionType::Long =>"(ln.) ",
+            ActionType::Free => "fr.".to_string(),
+            ActionType::Reaction => "rxn".to_string(),
+            ActionType::Bonus => "bns".to_string(),
+            ActionType::Action =>"a".to_string(),
+            ActionType::Long(time) =>format!("{}",time),
         };
-        write!(f, "{}", out)
+        write!(f, "{}", &out)
     }
 }
 #[derive(Debug, Eq, PartialEq,Clone,Hash,PartialOrd,Ord)]
@@ -365,7 +423,7 @@ impl fmt::Display for Action{
             let blank = String::from_utf8(vec![b'_'; nl]).expect("never fails");
             format!("({}/{})",blank,self.uses)
         };
-        write!(f,"{}{}{}",self.typ,self.name,resources)
+        write!(f,"({}) {}{}",self.typ,self.name,resources)
     }
 }
 impl Default for Action{
@@ -374,7 +432,7 @@ impl Default for Action{
     }
 }
 ///a struct for parsing the character into
-#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[derive(Debug, Eq, PartialEq,Clone,Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Character{
     pub char_name: String,
@@ -402,8 +460,9 @@ pub struct Character{
     pub other_profs: (Vec<String>,Vec<String>,Vec<String>,Vec<String>),//armor,weapon,language, tool
     pub coins: (i64,i64,i64,i64,i64),//cp,sp,ep,gp,pp
     pub spell_lists: Vec<SpellList>,
-    pub spell_slots: (i64,i64,i64,i64,i64,i64,i64,i64,i64),//1st,2nd,...9th
-    pub char_img: String
+    pub spell_slots: [i64;9],//1st,2nd,...9th
+    pub char_img: String,
+    pub pact_slots: (usize,usize)
 }
 
 impl Character{
@@ -415,7 +474,7 @@ impl Character{
             panic!("cannot find char name, probably because the api is wrong");
         }
         let char_name = char_name.as_str().unwrap().to_string();
-        let alignment=char_json["creatures"][0]["alignment"].as_str().unwrap().to_string();
+        let alignment=char_json["creatures"][0]["alignment"].as_str().unwrap_or("").to_string();
         let xp: i64=char_json["creatures"][0]["denormalizedStats"]["xp"].as_i64().unwrap();
         let mut ability_scores: Vec<AbilityScore> = vec![];
         let mut skills: Vec<Skill> = vec![];
@@ -442,6 +501,8 @@ impl Character{
         let mut coins = (0,0,0,0,0);
         let mut other_profs: (Vec<String>,Vec<String>,Vec<String>,Vec<String>) = (vec![],vec![],vec![],vec![]);
         let mut char_img = String::new();
+        let mut spell_ls_dict: HashMap<String,SpellList> =HashMap::new();
+        let mut spell_slots: [i64;9] = [0;9];
         if let Some(url) =char_json["creatures"][0]["avatarPicture"].as_str(){
             char_img = url.to_string();
         } else if let Some(url) = char_json["creatures"][0]["picture"].as_str(){
@@ -495,6 +556,53 @@ impl Character{
                 }
             }else if val["type"].as_str()==Some("feature"){
                 features.push(val["name"].as_str().unwrap().to_string());
+            }else if val["type"].as_str()==Some("spellList"){
+                let id = val["_id"].as_str().unwrap();
+                let max_prepared = val["maxPrepared"]["value"].as_i64().unwrap_or(0);
+                let dc = val["dc"]["value"].as_i64().unwrap_or(10);
+                let attack_bonus = val["attackRollBonus"]["value"].as_i64().unwrap_or(0);
+                let name = val["name"].as_str().unwrap();
+                spell_ls_dict.entry(id.to_string()).and_modify(|spl_lst| {
+                    spl_lst.name = name.to_string();
+                    spl_lst.save_dc=dc;
+                    spl_lst.atk_bonus = attack_bonus;
+                    spl_lst.max_prepared=max_prepared;})
+                    .or_insert(SpellList::new(HashMap::new(),name.to_string(),dc,attack_bonus,max_prepared));
+            }else if val["type"].as_str()==Some("spell"){
+                let par_id = val["parent"]["id"].as_str().unwrap();
+                let name = val["name"].as_str().unwrap().to_string();
+                let lvl = val["level"].as_i64().unwrap();
+                let casting_time = val["castingTime"].as_str().unwrap().to_string();
+                let duration = val["duration"].as_str().unwrap().to_string();
+                let school = val["school"].as_str().unwrap().to_string();
+                let range = val["range"].as_str().unwrap().to_string();
+                let vscr =(val["verbal"].as_bool()==Some(true),val["somatic"].as_bool()==Some(true),
+                    val["concentration"].as_bool()==Some(true),val["ritual"].as_bool()==Some(true));
+                let material = match val["material"].as_str(){
+                    Some(s)=>s.to_string(),
+                    None=>String::new()
+                };
+                let casting_time = if &casting_time=="action"{
+                    ActionType::Action
+                } else if &casting_time=="bonus action"{
+                    ActionType::Bonus
+                } else if casting_time.contains("reaction"){
+                    ActionType::Reaction
+                } else if &casting_time=="free action"{
+                    ActionType::Free
+                } else {
+                    ActionType::Long(casting_time.replace("round","rnd").replace("minute","min").replace("hour","hr"))
+                };
+                let duration = duration.replace("Up to ","").replace("round","rnd").replace("minute","min").replace("hour","hr");
+                let range = range.replace("feet","ft").replace("miles","mi").replace("mile","mi");
+                let spl = Spell::new(name,lvl,casting_time,duration, school, range, vscr, material);
+                let _=spell_ls_dict.entry(par_id.to_string()).and_modify(|ls|{
+                    ls.levels.entry(lvl).and_modify(|splvl| {splvl.add_spell(spl.clone());}).or_insert(SpellLevel::new(lvl,vec![spl.clone()]));}
+                ).or_insert_with(|| {
+                    let mut spl_ls: HashMap<i64,SpellLevel> = HashMap::new();
+                    let _=spl_ls.insert(lvl,SpellLevel::new(lvl,vec![spl]));
+                    SpellList::new(spl_ls,String::new(),0,0,0)
+                });
             }else if val["type"].as_str()==Some("note"){
                 let failsafe = String::new();
                 if val["name"].as_str()==Some("Flaws"){
@@ -550,7 +658,7 @@ impl Character{
                     } else if typ==Some("action"){
                         ActionType::Action
                     } else if typ==Some("long"){
-                        ActionType::Long
+                        ActionType::Long("lng".to_string())
                     } else {
                         ActionType::default()
                     };
@@ -589,6 +697,12 @@ impl Character{
                         val["name"].as_str().unwrap().to_string(),
                         val["plural"].as_str().unwrap_or(&nme).to_string()));
                 }
+            }else if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("spellSlot") {
+                if val["variableName"].as_str().unwrap().contains("slotLevel") && val["inactive"].as_bool() !=Some(true){
+                    let lvl = val["spellSlotLevel"]["value"].as_i64().unwrap();
+                    let num = val["value"].as_i64().unwrap();
+                    spell_slots[(lvl-1) as usize]=num;
+                }
             }else if val["name"].as_str()==Some("Proficiency Bonus"){
                 prof_bonus=val["total"].as_i64().unwrap();
             } else if val["name"].as_str()==Some("Speed") && val["type"].as_str()==Some("attribute"){
@@ -613,9 +727,15 @@ impl Character{
             }
         }
         let race = race_translator(race,race_decoder);
-        for pair in attacks_dict.iter(){
+        for pair in attacks_dict.into_iter(){
             if !pair.1.name().is_empty(){
-                attacks.push(pair.1.clone());
+                attacks.push(pair.1);
+            }
+        }
+        let mut spell_lists: Vec<SpellList>= vec![];
+        for pair in spell_ls_dict.into_iter(){
+            if !pair.1.name.is_empty(){
+                spell_lists.push(pair.1);
             }
         }
         Character{
@@ -643,9 +763,10 @@ impl Character{
             features,
             other_profs,
             coins,
-            spell_lists: vec![],
-            spell_slots: (0,0,0,0,0,0,0,0,0),
-            char_img
+            spell_lists,
+            spell_slots,
+            char_img,
+            pact_slots: (0,0)
         }
     }
 }
