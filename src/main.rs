@@ -54,7 +54,7 @@ async fn main() {
         .push().expect("Invalid row");
     doc.push(header);
     let mut detail = elements::TableLayout::new(vec![1,2]);
-    println!("Processing Character...");
+    println!("Processing Character(this may take a while)...");
     let character = Character::new(char_json.await,race_decoder);
     println!("Setting up document...");
     detail.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
@@ -688,13 +688,6 @@ async fn main() {
         )
         .push().expect("Failed to add row");
     doc.push(page_2);
-    let mut out_path = String::new();
-    println!("What would you like the output file to be?");
-    stdin.read_line(&mut out_path).expect("Failed to get output path");
-    let mut out_path = out_path.trim().to_string();
-    if !out_path.ends_with(".pdf"){
-        out_path+=".pdf";
-    }
     let mut spl_lists = character.spell_lists;
     let spl_slots = character.spell_slots;
     if !spl_lists.is_empty(){
@@ -743,8 +736,18 @@ async fn main() {
                 )
                 .push().expect("failed to build row");
             doc.push(spell_header);
+            let mut spell_column_specifier =elements::TableLayout::new(vec![6,2,2,2,1,2,6]);
+            spell_column_specifier.row()
+                .element(Paragraph::new("NAME").styled(slt_fmt))
+                .element(Paragraph::new("SCHOOL").styled(slt_fmt))
+                .element(Paragraph::new("CAST TIME").styled(slt_fmt))
+                .element(Paragraph::new("RANGE").styled(slt_fmt))
+                .element(Paragraph::new("VSCR").styled(slt_fmt))
+                .element(Paragraph::new("DUR").styled(slt_fmt))
+                .element(Paragraph::new("MATERIAL").styled(slt_fmt))
+                .push().expect("failed to add row");
+            doc.push(spell_column_specifier);
             let mxlvl = ls.max_lvl();
-            println!("{:?}",ls);
             for i in 0..=mxlvl{
                 if i==0{
                     doc.push(Paragraph::new("CANTRIPS").styled(style::Style::new().bold().with_font_size(11)));
@@ -754,8 +757,9 @@ async fn main() {
                         .styled(style::Style::new().bold().with_font_size(11)));
                 }
                 if let Some(lvl)=ls.levels.get(&i){
-                    let spells = lvl.spells().clone();
-                    let mut spl_table= elements::TableLayout::new(vec![6,4,1,2,1,2,4]);
+                    let mut spells = lvl.spells().clone();
+                    spells.sort();
+                    let mut spl_table= elements::TableLayout::new(vec![6,2,2,2,1,2,6]);
                     for spl in spells{
                         row_from_spell(&mut spl_table, &spl);
                     }
@@ -766,13 +770,20 @@ async fn main() {
             }
         }
     }
+    let mut out_path = String::new();
+    println!("What would you like the output file to be?");
+    stdin.read_line(&mut out_path).expect("Failed to get output path");
+    let mut out_path = out_path.trim().to_string();
+    if !out_path.ends_with(".pdf"){
+        out_path+=".pdf";
+    }
     out_path = "./sheet_outputs/".to_string()+&out_path;
     println!("Rendering pdf...(this may take a moment)");
     doc.render_to_file(out_path).expect("Failed to write output file");
 }
 fn row_from_spell(spell_table: &mut elements::TableLayout, spl: &Spell){
     let scl: String = spl.school().chars().take(4).collect();
-    let material: String = spl.material().chars().take(20).collect();
+    let material: String = spl.material().chars().take(30).collect();
     let sty = style::Style::new().with_font_size(10);
     spell_table
         .row()

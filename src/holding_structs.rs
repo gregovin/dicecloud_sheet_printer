@@ -568,8 +568,16 @@ impl Character{
                     spl_lst.atk_bonus = attack_bonus;
                     spl_lst.max_prepared=max_prepared;})
                     .or_insert(SpellList::new(HashMap::new(),name.to_string(),dc,attack_bonus,max_prepared));
-            }else if val["type"].as_str()==Some("spell"){
-                let par_id = val["parent"]["id"].as_str().unwrap();
+            }else if val["type"].as_str()==Some("spell")&&val["deactivatedByToggle"].as_bool()!=Some(true){
+                let ancestors = val["ancestors"].as_array().unwrap();
+                let mut spl_list_id: String = String::new();
+                for anc in ancestors.iter().rev(){
+                    if spell_ls_dict.contains_key(anc["id"].as_str().unwrap_or("")){
+                        spl_list_id=anc["id"].as_str().unwrap().to_string();
+                        break;
+                    }
+                }
+                // assume this always works
                 let name = val["name"].as_str().unwrap().to_string();
                 let lvl = val["level"].as_i64().unwrap();
                 let casting_time = val["castingTime"].as_str().unwrap().to_string();
@@ -593,10 +601,10 @@ impl Character{
                 } else {
                     ActionType::Long(casting_time.replace("round","rnd").replace("minute","min").replace("hour","hr"))
                 };
-                let duration = duration.replace("Up to ","").replace("round","rnd").replace("minute","min").replace("hour","hr");
-                let range = range.replace("feet","ft").replace("miles","mi").replace("mile","mi");
+                let duration = duration.to_lowercase().replace("up to ","").replace("round","rnd").replace("minute","min").replace("hour","hr");
+                let range = range.replace("feet","ft").replace("miles","mi").replace("mile","mi").replace("slotLevel","sl");
                 let spl = Spell::new(name,lvl,casting_time,duration, school, range, vscr, material);
-                let _=spell_ls_dict.entry(par_id.to_string()).and_modify(|ls|{
+                let _=spell_ls_dict.entry(spl_list_id.to_string()).and_modify(|ls|{
                     ls.levels.entry(lvl).and_modify(|splvl| {splvl.add_spell(spl.clone());}).or_insert(SpellLevel::new(lvl,vec![spl.clone()]));}
                 ).or_insert_with(|| {
                     let mut spl_ls: HashMap<i64,SpellLevel> = HashMap::new();
@@ -722,9 +730,6 @@ impl Character{
                 race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
             }
             idx +=1;
-            if idx % 100 == 0{
-                println!("Proccessed {} properties",idx);
-            }
         }
         let race = race_translator(race,race_decoder);
         for pair in attacks_dict.into_iter(){
