@@ -695,7 +695,7 @@ async fn main() {
     if !out_path.ends_with(".pdf"){
         out_path+=".pdf";
     }
-    let spl_lists = character.spell_lists;
+    let mut spl_lists = character.spell_lists;
     let spl_slots = character.spell_slots;
     if !spl_lists.is_empty(){
         doc.push(elements::PageBreak::new());
@@ -714,6 +714,57 @@ async fn main() {
             .element(spell_slot_elem(&spl_slots, 9,symbol,slt_fmt).padded(1).framed())
             .push().expect("failed to add row");
         doc.push(spell_slots_table);
+        spl_lists.sort();
+        for ls in spl_lists{
+            let mut spell_header = elements::TableLayout::new(vec![3,1,1,1]);
+            spell_header.row()
+                .element(Paragraph::new(&ls.name).aligned(Alignment::Center)
+                    .styled(style::Style::new().bold().with_font_size(14)).padded(1).framed().padded(1))
+                .element(elements::LinearLayout::vertical()
+                    .element(Paragraph::new(bns_translator(ls.atk_bonus)).aligned(Alignment::Center)
+                        .styled(style::Style::new().with_font_size(10)))
+                    .element(Paragraph::new("ATTACK BONUS").aligned(Alignment::Center)
+                        .styled(slt_fmt))
+                    .padded(1).framed().padded(1)
+                )
+                .element(elements::LinearLayout::vertical()
+                    .element(Paragraph::new(format!("DC {}",ls.save_dc)).aligned(Alignment::Center)
+                        .styled(style::Style::new().with_font_size(10)))
+                    .element(Paragraph::new("SAVE DC").aligned(Alignment::Center)
+                        .styled(slt_fmt))
+                    .padded(1).framed().padded(1)
+                )
+                .element(elements::LinearLayout::vertical()
+                    .element(Paragraph::new(format!("/{}",ls.max_prepared)).aligned(Alignment::Right)
+                        .styled(style::Style::new().with_font_size(10)))
+                    .element(Paragraph::new("PREPARED").aligned(Alignment::Center)
+                        .styled(slt_fmt))
+                    .padded(1).framed().padded(1)
+                )
+                .push().expect("failed to build row");
+            doc.push(spell_header);
+            let mxlvl = ls.max_lvl();
+            println!("{:?}",ls);
+            for i in 0..=mxlvl{
+                if i==0{
+                    doc.push(Paragraph::new("CANTRIPS").styled(style::Style::new().bold().with_font_size(11)));
+                } else {
+                    let ord = if i==1{"ST"} else if i==2{"ND"} else if i==3{"RD"} else {"TH"};
+                    doc.push(Paragraph::new(format!("{}{} LEVEL SPELLS",i,ord))
+                        .styled(style::Style::new().bold().with_font_size(11)));
+                }
+                if let Some(lvl)=ls.levels.get(&i){
+                    let spells = lvl.spells().clone();
+                    let mut spl_table= elements::TableLayout::new(vec![6,4,1,2,1,2,4]);
+                    for spl in spells{
+                        row_from_spell(&mut spl_table, &spl);
+                    }
+                    doc.push(spl_table);
+                } else {
+                    doc.push(elements::Break::new(1.0).styled(style::Style::new().with_font_size(7)));
+                }
+            }
+        }
     }
     out_path = "./sheet_outputs/".to_string()+&out_path;
     println!("Rendering pdf...(this may take a moment)");

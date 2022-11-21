@@ -337,7 +337,7 @@ impl SpellList{
     pub fn new(levels: HashMap<i64,SpellLevel>,name: String,save_dc: i64, atk_bonus: i64, max_prepared: i64)->SpellList{
         SpellList{levels, name, save_dc, atk_bonus,max_prepared}
     }
-    fn max_lvl(&self)->i64{
+    pub fn max_lvl(&self)->i64{
         self.levels.iter().fold(0,|mx,val| if val.1.lvl()>mx {val.1.lvl()} else {mx})
     }
 }
@@ -346,9 +346,9 @@ impl PartialOrd for SpellList{
         let own_lvl = self.max_lvl();
         let other_lvl = other.max_lvl();
         if self.max_prepared != other.max_prepared{
-            self.max_prepared.partial_cmp(&other.max_prepared)
+            other.max_prepared.partial_cmp(&self.max_prepared)
         } else if own_lvl != other_lvl{
-            own_lvl.partial_cmp(&other_lvl)
+            other_lvl.partial_cmp(&own_lvl)
         } else if self.name != other.name {
             self.name.partial_cmp(&other.name)
         } else if self.save_dc != other.save_dc{
