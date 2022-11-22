@@ -519,7 +519,7 @@ async fn main() {
 
     for _i in 0..26{
         if let Some(name)=actions_itr.next(){
-            if &name==&String::default(){
+            if &name==&Action::default().to_string(){
                 features_elem=features_elem.element(Hline::new());
                 features_elem=features_elem.element(Paragraph::new("FEATURES").aligned(Alignment::Center)
                     .styled(style::Style::new().bold().with_font_size(7)))
@@ -736,8 +736,9 @@ async fn main() {
                 )
                 .push().expect("failed to build row");
             doc.push(spell_header);
-            let mut spell_column_specifier =elements::TableLayout::new(vec![6,2,2,2,1,2,6]);
+            let mut spell_column_specifier =elements::TableLayout::new(vec![1,12,3,4,4,2,4,11]);
             spell_column_specifier.row()
+                .element(Paragraph::new("P").styled(slt_fmt))
                 .element(Paragraph::new("NAME").styled(slt_fmt))
                 .element(Paragraph::new("SCHOOL").styled(slt_fmt))
                 .element(Paragraph::new("CAST TIME").styled(slt_fmt))
@@ -759,9 +760,9 @@ async fn main() {
                 if let Some(lvl)=ls.levels.get(&i){
                     let mut spells = lvl.spells().clone();
                     spells.sort();
-                    let mut spl_table= elements::TableLayout::new(vec![6,2,2,2,1,2,6]);
+                    let mut spl_table= elements::TableLayout::new(vec![1,12,3,4,4,2,4,11]);
                     for spl in spells{
-                        row_from_spell(&mut spl_table, &spl);
+                        row_from_spell(&mut spl_table, &spl,symbol);
                     }
                     doc.push(spl_table);
                 } else {
@@ -781,12 +782,17 @@ async fn main() {
     println!("Rendering pdf...(this may take a moment)");
     doc.render_to_file(out_path).expect("Failed to write output file");
 }
-fn row_from_spell(spell_table: &mut elements::TableLayout, spl: &Spell){
+fn row_from_spell(spell_table: &mut elements::TableLayout, spl: &Spell, symb: style::Style){
     let scl: String = spl.school().chars().take(4).collect();
     let material: String = spl.material().chars().take(30).collect();
     let sty = style::Style::new().with_font_size(10);
+    let prpd = match spl.prepd(){
+        SpellPrep::AlwaysPrepared => Paragraph::new("A ").styled(sty),
+        _=> Paragraph::default().styled_string("⭘",symb.with_font_size(10)).string(" ").styled(sty)
+    };
     spell_table
         .row()
+        .element(prpd)
         .element(Paragraph::new(spl.name()).styled(sty))
         .element(Paragraph::new(format!("{}.",scl)).styled(sty))
         .element(Paragraph::new(&spl.casting_time().to_string()).styled(sty))

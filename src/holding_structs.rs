@@ -254,6 +254,14 @@ impl Ord for Item{
         self.partial_cmp(other).unwrap()
     }
 }
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default,PartialOrd,Ord,Copy)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum SpellPrep{
+    AlwaysPrepared,
+    Prepared,
+    #[default]
+    NotPrepared,
+}
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default,PartialOrd,Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Spell{
@@ -264,7 +272,8 @@ pub struct Spell{
     school: String,
     range: String,
     vscr: (bool,bool,bool,bool),
-    material: String
+    material: String,
+    prepd: SpellPrep
 }
 impl Spell{
     pub fn name(&self)->&String{
@@ -298,8 +307,20 @@ impl Spell{
     pub fn material(&self)->&String{
         &self.material
     }
+    pub fn prepd(&self)->SpellPrep{
+        self.prepd
+    }
     pub fn new(name: String, level: i64, casting_time: ActionType, duration: String, school: String, range: String, vscr: (bool,bool,bool,bool),material: String)->Spell{
-        Spell{name,level,casting_time,duration,school,range,vscr,material}
+        Spell{name,level,casting_time,duration,school,range,vscr,material,prepd:SpellPrep::NotPrepared}
+    }
+    pub fn prepare(&mut self){
+        self.prepd = SpellPrep::Prepared;
+    }
+    pub fn always_prepare(&mut self){
+        self.prepd = SpellPrep::AlwaysPrepared;
+    }
+    pub fn unprepare(&mut self){
+        self.prepd = SpellPrep::NotPrepared;
     }
 }
 ///We store all spells of the same level in the same SpellLevel struct
@@ -468,7 +489,7 @@ pub struct Character{
 impl Character{
     /// #Panics
     /// when properties do not follow the expected structure, (ie a core stat can't be found, or a property does not have an expected entry), the function will panic
-    pub fn new(char_json: Value,race_decoder: Value)->Character{
+    pub fn new(mut char_json: Value,race_decoder: Value)->Character{
         let char_name=&char_json["creatures"][0]["name"];
         if char_name == &Value::Null{
             panic!("cannot find char name, probably because the api is wrong");
@@ -491,11 +512,9 @@ impl Character{
         let mut attacks: Vec<Attack>=vec![];
         let mut actions: Vec<Action>=vec![];
         let mut classes: Vec<Class> = vec![];
-        let props: &Value = &char_json["creatureProperties"];
         let mut features: Vec<String> = vec![];
         let mut equipment: Vec<Item> = vec![];
         let mut hit_dice: Vec<Die> = vec![];
-        let mut idx =0;
         let mut background: Background=Background::new(String::new(),String::new());
         let mut race: String = String::new();
         let mut coins = (0,0,0,0,0);
@@ -508,8 +527,9 @@ impl Character{
         } else if let Some(url) = char_json["creatures"][0]["picture"].as_str(){
             char_img = url.to_string();
         }
-        while props[idx] != Value::Null{
-            let val = &props[idx];
+        let props = char_json["creatureProperties"].as_array_mut().unwrap();
+        props.sort_by(|a,b| a["order"].as_i64().unwrap().cmp(&b["order"].as_i64().unwrap()));
+        for val in props{
             if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("ability"){
                 ability_scores.push(AbilityScore::new(val["name"].as_str().unwrap().to_string(),
                     val["total"].as_i64().unwrap()));
@@ -603,14 +623,15 @@ impl Character{
                 };
                 let duration = duration.to_lowercase().replace("up to ","").replace("round","rnd").replace("minute","min").replace("hour","hr");
                 let range = range.replace("feet","ft").replace("miles","mi").replace("mile","mi").replace("slotLevel","sl");
-                let spl = Spell::new(name,lvl,casting_time,duration, school, range, vscr, material);
+                let mut spl = Spell::new(name,lvl,casting_time,duration, school, range, vscr, material);
+                if val["alwaysPrepared"].as_bool() == Some(true){
+                    spl.always_prepare();
+                } else if val["prepared"].as_bool() == Some(true){
+                    spl.prepare();
+                }
                 let _=spell_ls_dict.entry(spl_list_id.to_string()).and_modify(|ls|{
-                    ls.levels.entry(lvl).and_modify(|splvl| {splvl.add_spell(spl.clone());}).or_insert(SpellLevel::new(lvl,vec![spl.clone()]));}
-                ).or_insert_with(|| {
-                    let mut spl_ls: HashMap<i64,SpellLevel> = HashMap::new();
-                    let _=spl_ls.insert(lvl,SpellLevel::new(lvl,vec![spl]));
-                    SpellList::new(spl_ls,String::new(),0,0,0)
-                });
+                    ls.levels.entry(lvl).and_modify(|splvl| {splvl.add_spell(spl.clone());}).or_insert(SpellLevel::new(lvl,vec![spl]));}
+                );
             }else if val["type"].as_str()==Some("note"){
                 let failsafe = String::new();
                 if val["name"].as_str()==Some("Flaws"){
@@ -729,7 +750,6 @@ impl Character{
             } else if val["type"].as_str()==Some("constant") && val["variableName"].as_str()==Some("subRace"){
                 race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
             }
-            idx +=1;
         }
         let race = race_translator(race,race_decoder);
         for pair in attacks_dict.into_iter(){
