@@ -3,7 +3,7 @@ use genpdf::{elements::{self,Paragraph},fonts, style};
 use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,bns_translator,get_img_from_url,holding_structs::*};
 use std::collections::HashMap;
 use std::convert::TryInto;
-use itertools::Itertools;
+
 use std::{io,process,fs};
 use std::fmt::Write;
 #[tokio::main]
@@ -510,6 +510,8 @@ async fn main() {
     features_elem=features_elem.element(Paragraph::new("ACTIONS").aligned(Alignment::Center)
         .styled(style::Style::new().bold().with_font_size(7)));
     let mut actions = character.actions;
+    let mut equipment = character.equipment;
+    equipment.sort();
     actions.sort();
     actions.push(Action::default());
     let mut features = character.features;
@@ -517,9 +519,11 @@ async fn main() {
     dmg_mults.sort();
     features.sort();
     let re = regex::Regex::new(r"Pass (Dawn|Dusk|Midnight)").unwrap();
-    let mut actions_itr= actions.iter().filter(|act| !re.is_match(act.name())).map(|act| act.to_string());
-    let mut features = dmg_mults.into_iter().map(|mul| mul.to_string()).chain(features.into_iter().filter(|feat| !actions.iter().any(|x| feat==x.name())));
-
+    let mut features = dmg_mults.into_iter().map(|mul| mul.to_string())
+        .chain(features.into_iter().filter(|feat| !actions.iter().any(|x| feat==x.name())));
+    let mut actions_itr= actions.iter().filter(|act| !re.is_match(act.name()))
+        .filter(|act| !equipment.iter().any(|x| act.name()==x.name() && act.uses() !=-1))
+        .map(|act| act.to_string());
     for _i in 0..26{
         if let Some(name)=actions_itr.next(){
             if &name==&Action::default().to_string(){
@@ -591,19 +595,18 @@ async fn main() {
     doc.push(elements::PageBreak::new());
     // page 2 starts
     let mut page_2 = elements::TableLayout::new(vec![3,1]);
-    let mut equipment = character.equipment;
-    equipment.sort();
     let mut equipment_elem = elements::LinearLayout::vertical()
         .element(Paragraph::new("EQUIPMENT").aligned(Alignment::Center)
             .styled(style::Style::new().bold().with_font_size(7)));
-    for itm in equipment{
+    for itm in equipment.iter(){
         let q = itm.quantity();
         let nme = if q==1{
             itm.name()
         } else {
             itm.plural_name()
         };
-        equipment_elem = equipment_elem.element(Paragraph::new(format!("{} {}",q,nme))
+        equipment_elem = equipment_elem.element(Paragraph::default().styled_string(if itm.requires_attunement() {"❂ "} else {""},symbol)
+                .string(format!("{}{}",if q==1 {"".to_string()} else {q.to_string()+" "},nme))
                 .aligned(Alignment::Center)
                 .styled(style::Style::new().with_font_size(10))
             );

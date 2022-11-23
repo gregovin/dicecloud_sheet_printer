@@ -226,6 +226,7 @@ pub struct Item{
     quantity: i64,
     name: String,
     plural_name: String,
+    requires_attunement: bool,
 }
 impl Item{
     pub fn quantity(&self)->i64{
@@ -237,8 +238,14 @@ impl Item{
     pub fn plural_name(&self)->&String{
         &self.plural_name
     }
+    pub fn requires_attunement(&self)->bool{
+        self.requires_attunement
+    }
     pub fn new(quantity: i64,name: String,plural_name: String)->Item{
-        Item { quantity, name,plural_name}
+        Item { quantity, name,plural_name,requires_attunement: false}
+    }
+    pub fn needs_attuned(&mut self){
+        self.requires_attunement=true;
     }
 }
 impl PartialOrd for Item{
@@ -252,6 +259,13 @@ impl PartialOrd for Item{
 impl Ord for Item{
     fn cmp(&self,other: &Item)->Ordering{
         self.partial_cmp(other).unwrap()
+    }
+}
+impl fmt::Display for Item{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+        let atn = if self.requires_attunement{"❂ "} else {""};
+        let nme = if self.quantity==1 {&self.name} else {&self.plural_name};
+        write!(f,"{}{} {}",atn,self.quantity,&self.name)
     }
 }
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default,PartialOrd,Ord,Copy)]
@@ -746,9 +760,13 @@ impl Character{
                     }
                 }else{
                     let nme = val["name"].as_str().unwrap().to_string();
-                    equipment.push(Item::new(val["quantity"].as_i64().unwrap_or(0),
+                    let mut itme = Item::new(val["quantity"].as_i64().unwrap_or(0),
                         val["name"].as_str().unwrap().to_string(),
-                        val["plural"].as_str().unwrap_or(&nme).to_string()));
+                        val["plural"].as_str().unwrap_or(&nme).to_string());
+                    if val["requiresAttunement"].as_bool()==Some(true){
+                        itme.needs_attuned();
+                    }
+                    equipment.push(itme);
                 }
             }else if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("spellSlot") {
                 if val["inactive"].as_bool() !=Some(true){
