@@ -385,12 +385,22 @@ impl Ord for SpellList{
     }
 }
 ///a damage multiplier has Immunity, Resistence, Vulnerability, each with a string damage type
-#[derive(Debug, Eq, PartialEq,Clone,Hash)]
+#[derive(Debug, Eq, PartialEq,Clone,Hash,PartialOrd,Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DamageMult{
     Immune(String),
     Resist(String),
     Vuln(String),
+}
+impl fmt::Display for DamageMult{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (typ, str) = match self{
+            DamageMult::Immune(s)=> (s, "immunity"),
+            DamageMult::Resist(s)=> (s, "resistance"),
+            DamageMult::Vuln(s)=> (s, "vulnerability")
+        };
+        write!(f,"{} {}",typ,str)
+    }
 }
 #[derive(Debug, Eq, PartialEq,Clone,Hash,PartialOrd,Ord,Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -483,7 +493,6 @@ pub struct Character{
     pub spell_lists: Vec<SpellList>,
     pub spell_slots: [i64;9],//1st,2nd,...9th
     pub char_img: String,
-    pub pact_slots: (usize,usize)
 }
 
 impl Character{
@@ -632,6 +641,21 @@ impl Character{
                 let _=spell_ls_dict.entry(spl_list_id.to_string()).and_modify(|ls|{
                     ls.levels.entry(lvl).and_modify(|splvl| {splvl.add_spell(spl.clone());}).or_insert(SpellLevel::new(lvl,vec![spl]));}
                 );
+            }else if val["type"].as_str()==Some("damageMultiplier") && val["inactive"].as_bool()!=Some(true){
+                let mult = val["value"].as_f64().unwrap();
+                if mult == 0.0 {
+                    for typ in val["damageTypes"].as_array().unwrap_or(&vec![]){
+                        damage_mults.push(DamageMult::Immune(typ.as_str().unwrap().to_string()));
+                    }
+                } else if mult == 0.5 {
+                    for typ in val["damageTypes"].as_array().unwrap_or(&vec![]){
+                        damage_mults.push(DamageMult::Resist(typ.as_str().unwrap().to_string()));
+                    }
+                } else if mult == 2.0 {
+                    for typ in val["damageTypes"].as_array().unwrap_or(&vec![]){
+                        damage_mults.push(DamageMult::Vuln(typ.as_str().unwrap().to_string()));
+                    }
+                }
             }else if val["type"].as_str()==Some("note"){
                 let failsafe = String::new();
                 if val["name"].as_str()==Some("Flaws"){
@@ -790,8 +814,7 @@ impl Character{
             coins,
             spell_lists,
             spell_slots,
-            char_img,
-            pact_slots: (0,0)
+            char_img
         }
     }
 }

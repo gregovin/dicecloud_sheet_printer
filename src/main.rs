@@ -3,6 +3,7 @@ use genpdf::{elements::{self,Paragraph},fonts, style};
 use dicecloud_sheet_printer::{generate_pdf,get_token,get_character,get_char_url,bns_translator,get_img_from_url,holding_structs::*};
 use std::collections::HashMap;
 use std::convert::TryInto;
+use itertools::Itertools;
 use std::{io,process,fs};
 use std::fmt::Write;
 #[tokio::main]
@@ -512,10 +513,11 @@ async fn main() {
     actions.sort();
     actions.push(Action::default());
     let mut features = character.features;
+    let dmg_mults = character.damage_mults;
     features.sort();
     let re = regex::Regex::new(r"Pass (Dawn|Dusk|Midnight)").unwrap();
     let mut actions_itr= actions.iter().filter(|act| !re.is_match(act.name())).map(|act| act.to_string());
-    let mut features = features.into_iter().filter(|feat| !actions.iter().any(|x| feat==x.name()));
+    let mut features = dmg_mults.into_iter().map(|mul| mul.to_string()).chain(features.into_iter().filter(|feat| !actions.iter().any(|x| feat==x.name())));
 
     for _i in 0..26{
         if let Some(name)=actions_itr.next(){
