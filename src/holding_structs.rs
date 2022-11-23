@@ -547,7 +547,7 @@ impl Character{
                     initiative=val["value"].as_i64().unwrap();
                 } else if val["skillType"].as_str()==Some("save"){
                     let prf=val["proficiency"].as_f64();
-                    let prof = if prf ==Some(0.5){
+                    let prof = if prf ==Some(0.49) || prf==Some(0.5){
                         Proficiency::Half
                     } else if prf == Some(1.0){
                         Proficiency::Profficient

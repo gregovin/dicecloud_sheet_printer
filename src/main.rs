@@ -513,7 +513,8 @@ async fn main() {
     actions.sort();
     actions.push(Action::default());
     let mut features = character.features;
-    let dmg_mults = character.damage_mults;
+    let mut dmg_mults = character.damage_mults;
+    dmg_mults.sort();
     features.sort();
     let re = regex::Regex::new(r"Pass (Dawn|Dusk|Midnight)").unwrap();
     let mut actions_itr= actions.iter().filter(|act| !re.is_match(act.name())).map(|act| act.to_string());
