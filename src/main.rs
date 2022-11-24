@@ -92,7 +92,7 @@ async fn main() {
     let class_str: String = if classes.len()==1{
         classes.iter().map(|class| format!("{} {}",class.name(),class.level())).collect::<Vec<String>>().join(" ")
     } else {
-        classes.iter().map(|class| format!("{}. {}",class.name().chars().take(4).collect::<String>(),class.level())).collect::<Vec<String>>().join(" ")
+        classes.iter().map(|class| format!("{}. {}",class.name().chars().take(3).collect::<String>(),class.level())).collect::<Vec<String>>().join(" ")
     };
     detail_right
         .row()
@@ -167,17 +167,18 @@ async fn main() {
     let mut left_bar = elements::TableLayout::new(vec![1,2]);
     left_bar.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
     let mut skills = character.skills;
-    let mut saves: HashMap<&str,&Skill> = HashMap::new();
+    let mut saves: HashMap<String,&Skill> = HashMap::new();
     for save in &character.saving_throws{
-        saves.insert(save.name(),save);
+        let nme = save.name().replace(" Save","");
+        saves.insert(nme,save);
     }
     let saving_throws = elements::LinearLayout::vertical()
-        .element(element_from_skill(saves.get("Strength Save").unwrap(),&symbol))
-        .element(element_from_skill(saves.get("Dexterity Save").unwrap(),&symbol))
-        .element(element_from_skill(saves.get("Constitution Save").unwrap(),&symbol))
-        .element(element_from_skill(saves.get("Intelligence Save").unwrap(),&symbol))
-        .element(element_from_skill(saves.get("Wisdom Save").unwrap(),&symbol))
-        .element(element_from_skill(saves.get("Charisma Save").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Strength").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Dexterity").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Constitution").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Intelligence").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Wisdom").unwrap(),&symbol))
+        .element(element_from_skill(saves.get("Charisma").unwrap(),&symbol))
         .element(elements::Break::new(0.5))
         .element(Paragraph::new("SAVING THROWS")
             .aligned(Alignment::Center)
@@ -699,11 +700,11 @@ async fn main() {
                     .padded(1)
                 )
                 .element(elements::LinearLayout::vertical()
-                    .element(Paragraph::new("Background").aligned(Alignment::Center)
+                    .element(Paragraph::new("BACKGROUND").aligned(Alignment::Center)
                         .styled(style::Style::new().bold().with_font_size(7)))
-                    .element(Paragraph::new(background.name()).aligned(Alignment::Center)
+                    .element(Paragraph::new(background.background_feature().name()).aligned(Alignment::Center)
                         .styled(style::Style::new().bold()))
-                    .element(Paragraph::new(background.description()).aligned(Alignment::Center)
+                    .element(Paragraph::new(background.background_feature().description()).aligned(Alignment::Center)
                         .styled(style::Style::new().with_font_size(10)))
                     .padded(1)
                     .framed()

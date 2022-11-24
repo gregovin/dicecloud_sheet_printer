@@ -120,22 +120,42 @@ impl Ord for Class{
         self.partial_cmp(other).unwrap()
     }
 }
-///a background is a name and a description
-#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default,PartialOrd,Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Background{
+pub struct Feature{
     name: String,
     description: String,
 }
-impl Background{
+impl Feature{
     pub fn name(&self)->&String{
         &self.name
     }
     pub fn description(&self)->&String{
         &self.description
     }
-    pub fn new(name: String, description: String)-> Background{
-        Background { name, description }
+    pub fn new(name: String, description: String)->Feature{
+        Feature { name, description}
+    }
+}
+///a background is a name and a description
+#[derive(Debug, Eq, PartialEq,Clone,Hash,Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Background{
+    name: String,
+    background_feature: Feature,
+}
+impl Background{
+    pub fn name(&self)->&String{
+        &self.name
+    }
+    pub fn background_feature(&self)->&Feature{
+        &self.background_feature
+    }
+    pub fn set_background_feature(&mut self,feat: Feature){
+        self.background_feature=feat;
+    }
+    pub fn new(name: String)-> Background{
+        Background { name, background_feature: Feature::default() }
     }
 }
 ///a dice has a size, and we include the number
@@ -564,6 +584,7 @@ impl Character{
         if char_name == &Value::Null{
             panic!("cannot find char name, probably because the api is wrong");
         }
+        let background_tags: Vec<&str> = vec!["backgroundFeature","background feature"];
         let char_name = char_name.as_str().unwrap().to_string();
         let alignment=char_json["creatures"][0]["alignment"].as_str().unwrap_or("").to_string();
         let xp: i64=char_json["creatures"][0]["denormalizedStats"]["xp"].as_i64().unwrap();
@@ -587,7 +608,7 @@ impl Character{
         let mut resources: Vec<Resource> = vec![];
         let mut equipment: Vec<Item> = vec![];
         let mut hit_dice: Vec<Die> = vec![];
-        let mut background: Background=Background::new(String::new(),String::new());
+        let mut background: Background=Background::default();
         let mut race: String = String::new();
         let mut coins = (0,0,0,0,0);
         let mut other_profs: (Vec<String>,Vec<String>,Vec<String>,Vec<String>) = (vec![],vec![],vec![],vec![]);
@@ -646,6 +667,10 @@ impl Character{
                 } else if val["skillType"].as_str()==Some("tool"){
                     other_profs.3.push(val["name"].as_str().unwrap().to_string());
                 }
+            } else if val["type"].as_str()==Some("feature") && 
+                val["tags"].as_array().unwrap().iter().any(|tag| tag.as_str().unwrap().contains("background")){
+                    background.set_background_feature(Feature::new(val["name"].as_str().unwrap().to_string(),
+                    val["summary"]["value"].as_str().unwrap().to_string()));
             }else if val["type"].as_str()==Some("feature"){
                 features.push(val["name"].as_str().unwrap().to_string());
             }else if val["type"].as_str()==Some("spellList"){
@@ -783,15 +808,14 @@ impl Character{
                 }
             }else if val["type"].as_str()==Some("damage"){
                 let par_id = val["parent"]["id"].as_str().unwrap().to_string();
-                let dmg_die = val["amount"]["calculation"].as_str().unwrap();
+                let dmg_die = val["amount"]["calculation"].as_str().unwrap_or("0d0");
                 let dmg_bonus = val["amount"]["effects"][0]["amount"]["value"].as_i64().unwrap_or(0);
                 let dmg_type = val["damageType"].as_str().unwrap().to_string();
                 let dmg_string = format!("{}{}{}[{}]",dmg_die,if dmg_bonus>=0 {"+"} else {""},
                 dmg_bonus,damage_type_abreviator(dmg_type));
-                match attacks_dict.get_mut(&par_id){
-                    Some(atk)=>atk.add_dmg(dmg_string),
-                    None=>{attacks_dict.insert(par_id,Attack::new(String::new(),AtkBonus::Bonus(0),dmg_string));},
-                };
+                if let Some(atk)=attacks_dict.get_mut(&par_id){
+                    atk.add_dmg(dmg_string);
+                }
             }else if val["type"].as_str()==Some("class"){
                 classes.push(Class::new(val["name"].as_str().unwrap().to_string(),
                     val["level"].as_i64().unwrap()));
@@ -836,9 +860,8 @@ impl Character{
                 hit_points=val["total"].as_i64().unwrap();
             } else if val["name"].as_str()==Some("Armor Class") && val["type"].as_str()==Some("attribute"){
                 ac=val["total"].as_i64().unwrap();
-            } else if !val["tags"].as_array().unwrap().is_empty() && val["tags"].as_array().unwrap()[0].as_str()==Some("background"){
-                background=Background::new(val["name"].as_str().unwrap().to_string(),
-                    val["description"].as_str().unwrap().to_string());
+            } else if val["tags"].as_array().unwrap().iter().any(|tag| tag.as_str()==Some("background")){
+                background=Background::new(val["name"].as_str().unwrap().to_string());
             } else if val["type"].as_str()==Some("constant"){
                 if val["variableName"].as_str()==Some("race"){
                     if race==String::new(){
