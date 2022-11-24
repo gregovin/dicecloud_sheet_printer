@@ -1,0 +1,1 @@
+This project is dual-licensed under the Apache-2.0 and MIT licenses. The image used in the jsonTest test character is liscensed from woodleywonderworks under Creative Commons BY 2.0. All other documentation and examples are liscensed under the Creative Commons Zero Liscense. You can find a copy of the license texts in the LICENSES directory.
