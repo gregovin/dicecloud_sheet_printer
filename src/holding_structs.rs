@@ -817,16 +817,17 @@ impl Character{
                 classes.push(Class::new(val["name"].as_str().unwrap().to_string(),
                     val["level"].as_i64().unwrap()));
             }else if val["type"].as_str()==Some("item"){
-                if val["name"].as_str().unwrap().contains("piece"){
-                    let coin_type=val["name"].as_str().unwrap().to_string();
-                    if coin_type.contains("Platinum"){
+                if val["name"].as_str().unwrap().to_lowercase().contains("piece"){
+                    let coin_type=val["name"].as_str().unwrap().to_string().to_lowercase();
+                    if coin_type.contains("platinum"){
                         coins.4 = val["quantity"].as_i64().unwrap();
-                    } else if coin_type.contains("Gold"){
+                    } else if coin_type.contains("gold"){
                         coins.3 = val["quantity"].as_i64().unwrap();
-                        //electrum doesn't exist in dc v2
-                    } else if coin_type.contains("Silver"){
+                    } else if coin_type.contains("electrum"){
+                        coins.2 = val["quantity"].as_i64().unwrap();
+                    }else if coin_type.contains("silver"){
                         coins.1 = val["quantity"].as_i64().unwrap();
-                    } else if coin_type.contains("Copper"){
+                    } else if coin_type.contains("copper"){
                         coins.0 = val["quantity"].as_i64().unwrap();
                     }
                 }else{
@@ -879,9 +880,8 @@ impl Character{
             }
         }
         for class in classes.iter_mut(){
-            if class.name().to_lowercase() == starting_class.replace('\"',"").to_lowercase(){
+            if class.name().to_lowercase() == starting_class.replace('\"',"").replace('\'',"").to_lowercase(){
                 class.start_class=true;
-                println!("{}",class.name());
                 break;
             }
         }
