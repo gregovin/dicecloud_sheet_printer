@@ -18,12 +18,9 @@ async fn main() {
     let stdin= io::stdin();
     
     stdin.read_line(&mut username).expect("could not read username");
-    let mut psw = String::new();
-    println!("Password:");
-    stdin.read_line(&mut psw).expect("Fallied to get password");
-    let token =get_token(username, psw).await;
-    if token.is_empty(){
-        println!("Failed to login! Try accessing with no token?(y/n)");
+    let mut token =String::new();
+    if username.trim() == String::new(){
+        println!("No username detected, would you like to try accessing the character with no token?(y/n)");
         let mut ans= String::new();
         stdin.read_line(&mut ans).expect("failed to get answer");
         if !ans.to_lowercase().contains('y'){
@@ -32,7 +29,22 @@ async fn main() {
         }
         println!("continuing");
     } else {
-        println!("Successfully logged in");
+        let mut psw = String::new();
+        println!("Password:");
+        stdin.read_line(&mut psw).expect("Fallied to get password");
+        token = get_token(username, psw).await;
+        if token.is_empty(){
+            println!("Failed to login! Try accessing with no token?(y/n)");
+            let mut ans= String::new();
+            stdin.read_line(&mut ans).expect("failed to get answer");
+            if !ans.to_lowercase().contains('y'){
+                println!("Exiting to terminal");
+                process::exit(0);
+            }
+            println!("continuing");
+        } else {
+            println!("Successfully logged in");
+        }
     }
     println!("Enter Character ID:");
     let mut char_id = String::new();
@@ -75,10 +87,13 @@ async fn main() {
     }
     let mut detail_right = elements::TableLayout::new(vec![2,2,1]);
     detail_right.set_cell_decorator(elements::FrameCellDecorator::new(false, false, false));
-    let mut class_str = String::new();
-    for class in &character.classes{
-        let _=write!(class_str,"{} {}",class.name(),class.level());
-    }
+    let mut classes = character.classes;
+    classes.sort();
+    let class_str: String = if classes.len()==1{
+        classes.iter().map(|class| format!("{} {}",class.name(),class.level())).collect::<Vec<String>>().join(" ")
+    } else {
+        classes.iter().map(|class| format!("{}. {}",class.name().chars().take(4).collect::<String>(),class.level())).collect::<Vec<String>>().join(" ")
+    };
     detail_right
         .row()
         .element(
@@ -518,8 +533,10 @@ async fn main() {
     let mut dmg_mults = character.damage_mults;
     dmg_mults.sort();
     features.sort();
+    let mut resources = character.resources;
+    resources.sort();
     let re = regex::Regex::new(r"Pass (Dawn|Dusk|Midnight)").unwrap();
-    let mut features = dmg_mults.into_iter().map(|mul| mul.to_string())
+    let mut features = resources.into_iter().map(|r| r.to_string()).chain(dmg_mults.into_iter().map(|mul| mul.to_string()))
         .chain(features.into_iter().filter(|feat| !actions.iter().any(|x| feat==x.name())));
     let mut actions_itr= actions.iter().filter(|act| !re.is_match(act.name()))
         .filter(|act| !equipment.iter().any(|x| act.name()==x.name() && act.uses() !=-1))
@@ -589,10 +606,11 @@ async fn main() {
             .element(traits_elemt)
             .element(elements::Break::new(0.25))
             .element(features_elem.padded(1).framed().padded(1))
+            .element(elements::PageBreak::new())
         )
         .push().expect("failed to add row");
     doc.push(main_sheet);
-    doc.push(elements::PageBreak::new());
+    
     // page 2 starts
     let mut page_2 = elements::TableLayout::new(vec![3,1]);
     let mut equipment_elem = elements::LinearLayout::vertical()
@@ -742,7 +760,7 @@ async fn main() {
                 )
                 .push().expect("failed to build row");
             doc.push(spell_header);
-            let mut spell_column_specifier =elements::TableLayout::new(vec![1,12,3,4,4,2,4,11]);
+            let mut spell_column_specifier =elements::TableLayout::new(vec![1,11,3,4,5,2,4,11]);
             spell_column_specifier.row()
                 .element(Paragraph::new("P").styled(slt_fmt))
                 .element(Paragraph::new("NAME").styled(slt_fmt))
@@ -863,6 +881,6 @@ fn spell_slot_elem(spell_slots: &[i64],level: i64, symbol: style::Style, slt: st
     let ordinal = if level ==1{"ST"} else if level==2{"ND"} else if level == 3{"RD"} else {"TH"};
     elements::LinearLayout::vertical()
         .element(Paragraph::new(format!("{}{} LEVEL",level, ordinal)).aligned(Alignment::Center).styled(slt))
-        .element(Paragraph::new(vec!['⭘'; spell_slots[(level-1) as usize].try_into().unwrap()].into_iter().collect::<String>())
+        .element(Paragraph::new(vec!["⭘"; spell_slots[(level-1) as usize].try_into().unwrap()].into_iter().collect::<String>())
             .aligned(Alignment::Center).styled(symbol.with_font_size(10)))
 }

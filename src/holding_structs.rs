@@ -91,6 +91,7 @@ impl Ord for Skill{
 pub struct Class{
     name: String,
     level: i64,
+    pub start_class: bool,
 }
 impl Class{
     pub fn name(&self)->&String{
@@ -100,7 +101,23 @@ impl Class{
         self.level
     }
     pub fn new(name: String, level: i64)->Class{
-        Class { name, level}
+        Class { name, level, start_class: false}
+    }
+}
+impl PartialOrd for Class{
+    fn partial_cmp(&self, other: &Class) -> Option<Ordering> {
+        if self.start_class != other.start_class {
+            if self.start_class && !other.start_class {Some(Ordering::Less)} else {Some(Ordering::Greater)}
+        } else if self.level!=other.level(){
+            other.level().partial_cmp(&self.level)
+        } else {
+            self.name.partial_cmp(other.name())
+        }
+    }
+}
+impl Ord for Class{
+    fn cmp(&self, other: &Class) ->Ordering{
+        self.partial_cmp(other).unwrap()
     }
 }
 ///a background is a name and a description
@@ -265,7 +282,7 @@ impl fmt::Display for Item{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
         let atn = if self.requires_attunement{"❂ "} else {""};
         let nme = if self.quantity==1 {&self.name} else {&self.plural_name};
-        write!(f,"{}{} {}",atn,self.quantity,&self.name)
+        write!(f,"{}{} {}",atn,self.quantity,nme)
     }
 }
 #[derive(Debug, Eq, PartialEq,Clone,Hash,Default,PartialOrd,Ord,Copy)]
@@ -476,6 +493,35 @@ impl Default for Action{
         Action{name:String::default(),typ: ActionType::default(), uses:-1}
     }
 }
+#[derive(Debug, Eq, PartialEq,Clone,Hash,PartialOrd,Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Resource {
+    name: String,
+    total: i64,
+}
+impl Resource{
+    pub fn name(&self)->&String{
+        &self.name
+    }
+    pub fn total(&self)->i64{
+        self.total
+    }
+    pub fn new(name: String, total: i64)->Resource{
+        Resource{name, total}
+    }
+}
+impl fmt::Display for Resource{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>)-> fmt::Result{
+        let nl = format!("{}",self.total).len();
+        let resources = if self.total==-1{
+            String::new()
+        } else {
+            let blank = String::from_utf8(vec![b'_'; nl]).expect("never fails");
+            format!("({}/{})",blank,self.total)
+        };
+        write!(f,"{} {}",self.name,resources)
+    }
+}
 ///a struct for parsing the character into
 #[derive(Debug, Eq, PartialEq,Clone,Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -499,6 +545,7 @@ pub struct Character{
     pub hit_dice: Vec<Die>,
     pub attacks: Vec<Attack>,
     pub actions: Vec<Action>,
+    pub resources: Vec<Resource>,
     pub equipment: Vec<Item>,
     pub traits: (String, String, String, String),//Personality, Ideals, Bonds, Flaws
     pub features: Vec<String>,
@@ -536,6 +583,8 @@ impl Character{
         let mut actions: Vec<Action>=vec![];
         let mut classes: Vec<Class> = vec![];
         let mut features: Vec<String> = vec![];
+        let mut starting_class = String::new();
+        let mut resources: Vec<Resource> = vec![];
         let mut equipment: Vec<Item> = vec![];
         let mut hit_dice: Vec<Die> = vec![];
         let mut background: Background=Background::new(String::new(),String::new());
@@ -645,7 +694,8 @@ impl Character{
                     ActionType::Long(casting_time.replace("round","rnd").replace("minute","min").replace("hour","hr"))
                 };
                 let duration = duration.to_lowercase().replace("up to ","").replace("round","rnd").replace("minute","min").replace("hour","hr");
-                let range = range.replace("feet","ft").replace("miles","mi").replace("mile","mi").replace("slotLevel","sl");
+                let range = range.replace("feet","ft").replace("miles","mi").replace("mile","mi").replace("slotLevel","sl")
+                    .replace("foot","ft").replace("radius","rad").replace(" * (1 + spellSniper)","");
                 let mut spl = Spell::new(name,lvl,casting_time,duration, school, range, vscr, material);
                 if val["alwaysPrepared"].as_bool() == Some(true){
                     spl.always_prepare();
@@ -774,6 +824,10 @@ impl Character{
                     let num = val["value"].as_i64().unwrap();
                     spell_slots[(lvl-1) as usize]+=num;
                 }
+            }else if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("resource") {
+                if val["inactive"].as_bool() !=Some(true){
+                    resources.push(Resource::new(val["name"].as_str().unwrap().to_string(),val["total"].as_i64().unwrap_or(0)));
+                }
             }else if val["name"].as_str()==Some("Proficiency Bonus"){
                 prof_bonus=val["total"].as_i64().unwrap();
             } else if val["name"].as_str()==Some("Speed") && val["type"].as_str()==Some("attribute"){
@@ -785,12 +839,23 @@ impl Character{
             } else if !val["tags"].as_array().unwrap().is_empty() && val["tags"].as_array().unwrap()[0].as_str()==Some("background"){
                 background=Background::new(val["name"].as_str().unwrap().to_string(),
                     val["description"].as_str().unwrap().to_string());
-            } else if val["type"].as_str()==Some("constant")&&val["variableName"].as_str()==Some("race"){
-                if race==String::new(){
+            } else if val["type"].as_str()==Some("constant"){
+                if val["variableName"].as_str()==Some("race"){
+                    if race==String::new(){
+                        race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
+                    }
+                } else if val["type"].as_str()==Some("constant") && val["variableName"].as_str()==Some("subRace"){
                     race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
+                } else if val["variableName"].as_str()==Some("startingClass"){
+                    starting_class = val["calculation"].as_str().unwrap().trim().to_string();
                 }
-            } else if val["type"].as_str()==Some("constant") && val["variableName"].as_str()==Some("subRace"){
-                race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
+            }
+        }
+        for class in classes.iter_mut(){
+            if class.name().to_lowercase() == starting_class.replace('\"',"").to_lowercase(){
+                class.start_class=true;
+                println!("{}",class.name());
+                break;
             }
         }
         let race = race_translator(race,race_decoder);
@@ -825,6 +890,7 @@ impl Character{
             hit_dice,
             attacks,
             actions,
+            resources,
             equipment,
             traits,
             features,
