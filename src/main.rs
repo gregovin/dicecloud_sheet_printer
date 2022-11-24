@@ -785,7 +785,7 @@ async fn main() {
                 if let Some(lvl)=ls.levels.get(&i){
                     let mut spells = lvl.spells().clone();
                     spells.sort();
-                    let mut spl_table= elements::TableLayout::new(vec![1,12,3,4,4,2,4,11]);
+                    let mut spl_table= elements::TableLayout::new(vec![1,11,3,4,5,2,4,11]);
                     for spl in spells{
                         row_from_spell(&mut spl_table, &spl,symbol);
                     }

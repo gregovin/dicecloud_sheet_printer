@@ -697,7 +697,7 @@ impl Character{
                 // assume this always works
                 let name = val["name"].as_str().unwrap().to_string();
                 let lvl = val["level"].as_i64().unwrap();
-                let casting_time = val["castingTime"].as_str().unwrap().to_string();
+                let casting_time = val["actionType"].as_str().unwrap().to_string();
                 let duration = val["duration"].as_str().unwrap().to_string();
                 let school = val["school"].as_str().unwrap().to_string();
                 let range = val["range"].as_str().unwrap().to_string();
@@ -709,14 +709,14 @@ impl Character{
                 };
                 let casting_time = if &casting_time=="action"{
                     ActionType::Action
-                } else if &casting_time=="bonus action"{
+                } else if &casting_time=="bonus"{
                     ActionType::Bonus
                 } else if casting_time.contains("reaction"){
                     ActionType::Reaction
-                } else if &casting_time=="free action"{
+                } else if &casting_time=="free"{
                     ActionType::Free
                 } else {
-                    ActionType::Long(casting_time.replace("round","rnd").replace("minute","min").replace("hour","hr"))
+                    ActionType::Long(val["castingTime"].as_str().unwrap_or("long").replace("round","rnd").replace("minute","min").replace("hour","hr"))
                 };
                 let duration = duration.to_lowercase().replace("up to ","").replace("round","rnd").replace("minute","min").replace("hour","hr");
                 let range = range.replace("feet","ft").replace("miles","mi").replace("mile","mi").replace("slotLevel","sl")
@@ -799,9 +799,11 @@ impl Character{
                         ActionType::Reaction
                     } else if typ==Some("action"){
                         ActionType::Action
-                    } else if typ==Some("long"){
+                    } else if typ==Some("event"){
+                        continue
+                    }else if typ==Some("long"){
                         ActionType::Long("lng".to_string())
-                    } else {
+                    } else{
                         ActionType::default()
                     };
                     actions.push(Action{name,uses,typ});
