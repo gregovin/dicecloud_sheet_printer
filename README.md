@@ -14,8 +14,8 @@ Everything else is in theory supported, with the following notes:
 Custom Classes are supported so long as they use the class variable
 Custom Races/Subraces are supported so long as they declare a constant with variable name "race" or "subRace"
 Custom backgrounds are in theory supported, as long as the feature or slotfiller containing the description has the tag background as its first tag(the description is expected to be in the description field)
-Custom features, actions, and attacks should work out of the box, however attacks may not find their damage in some cases
-Custom items are supported, and custom magic items will be supported when magic items are supported
+Custom features, actions, and attacks should work out of the box, however attacks may not find their damage in some cases.
+Custom items are supported.
 ## How to compile it yourself
 You will need the rust toolchain, which can be installed following these [instructions](https://doc.rust-lang.org/book/ch01-01-installation.html)
 Clone the repo, then cd into it and run `cargo run`. If you get a weird error complaining about openssl on linux, install the openssl development package for your platform(libssl-dev for ubuntu) and try again. At this point it should work (tm)
