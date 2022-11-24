@@ -7,3 +7,4 @@
 - When logging in, if no username is supplied it skips sending a login request to dicecloud and will alert the user. If the user wishes to continue, the program will proceed with a blank token
 - Started testing
 - Changed background handling to find background features instead
+- Added race handling for the SRD

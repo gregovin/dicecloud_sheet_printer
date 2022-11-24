@@ -872,6 +872,13 @@ impl Character{
                 } else if val["variableName"].as_str()==Some("startingClass"){
                     starting_class = val["calculation"].as_str().unwrap().trim().to_string();
                 }
+            } else if val["tags"].as_array().unwrap().iter().any(|tag| tag.as_str()==Some("race")){
+                if race==String::new(){
+                    race = val["name"].as_str().unwrap().to_string();
+                }
+            } else if val["tags"].as_array().unwrap().iter().any(|tag| tag.as_str()==Some("subrace")){
+                let subrace = val["name"].as_str().unwrap().to_string();
+                race = if subrace.contains(&race){subrace} else {subrace +&race};
             }
         }
         for class in classes.iter_mut(){
