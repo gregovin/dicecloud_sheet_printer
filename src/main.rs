@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 
 use std::{io,process,fs};
-use std::fmt::Write;
 #[tokio::main]
 async fn main() {
     let mut doc = generate_pdf();
@@ -544,7 +543,7 @@ async fn main() {
         .map(|act| act.to_string());
     for _i in 0..26{
         if let Some(name)=actions_itr.next(){
-            if &name==&Action::default().to_string(){
+            if name==Action::default().to_string(){
                 features_elem=features_elem.element(Hline::new());
                 features_elem=features_elem.element(Paragraph::new("FEATURES").aligned(Alignment::Center)
                     .styled(style::Style::new().bold().with_font_size(7)))
@@ -633,8 +632,8 @@ async fn main() {
     let mut features_elem2= elements::LinearLayout::vertical();
     features_elem2=features_elem2.element(Paragraph::new("OTHER FEATURES & TRAITS").aligned(Alignment::Center)
         .styled(style::Style::new().bold().with_font_size(7)));
-    while let Some(name)=actions_itr.next(){
-        if &name==&String::default(){
+    for name in actions_itr{
+        if name==String::default(){
             features_elem2=features_elem2.element(Hline::new());
             features_elem2=features_elem2.element(Paragraph::new("FEATURES").aligned(Alignment::Center)
                 .styled(style::Style::new().bold().with_font_size(7)))
@@ -643,7 +642,7 @@ async fn main() {
                 .styled(style::Style::new().with_font_size(10)));
         }
     }
-    while let Some(name)=features.next(){
+    for name in features{
         features_elem2=features_elem2.element(Paragraph::new(name).aligned(Alignment::Center)
             .styled(style::Style::new().with_font_size(10)));
     }

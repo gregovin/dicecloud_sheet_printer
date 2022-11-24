@@ -43,7 +43,7 @@ pub async fn get_character(token: String, character_url: String)->Value{
         panic!("invalid response");
     }
     let out: Value =serde_json::from_str(&txt).expect("bad format");
-    if out["error"].as_str() != None{
+    if out["error"].as_str().is_some(){
         println!("{}. Exiting program",out["error"].as_str().unwrap());
         process::exit(1);
     }

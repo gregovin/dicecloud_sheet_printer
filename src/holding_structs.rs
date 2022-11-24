@@ -470,7 +470,7 @@ impl fmt::Display for ActionType{
             ActionType::Reaction => "rxn".to_string(),
             ActionType::Bonus => "bns".to_string(),
             ActionType::Action =>"a".to_string(),
-            ActionType::Long(time) =>format!("{}",time),
+            ActionType::Long(time) =>time.to_string(),
         };
         write!(f, "{}", &out)
     }
@@ -584,7 +584,6 @@ impl Character{
         if char_name == &Value::Null{
             panic!("cannot find char name, probably because the api is wrong");
         }
-        let background_tags: Vec<&str> = vec!["backgroundFeature","background feature"];
         let char_name = char_name.as_str().unwrap().to_string();
         let alignment=char_json["creatures"][0]["alignment"].as_str().unwrap_or("").to_string();
         let xp: i64=char_json["creatures"][0]["denormalizedStats"]["xp"].as_i64().unwrap();
@@ -644,7 +643,7 @@ impl Character{
                         val["value"].as_i64().unwrap(),prof));
                 } else if val["skillType"].as_str()==Some("skill"){
                     let prf=val["proficiency"].as_f64();
-                    let prof = if prf!= None && prf.unwrap() >= 0.48 && prf.unwrap() <= 0.52{
+                    let prof = if prf.is_some() && prf.unwrap() >= 0.48 && prf.unwrap() <= 0.52{
                         Proficiency::Half
                     } else if prf == Some(1.0){
                         Proficiency::Profficient
@@ -679,12 +678,8 @@ impl Character{
                 let dc = val["dc"]["value"].as_i64().unwrap_or(10);
                 let attack_bonus = val["attackRollBonus"]["value"].as_i64().unwrap_or(0);
                 let name = val["name"].as_str().unwrap();
-                spell_ls_dict.entry(id.to_string()).and_modify(|spl_lst| {
-                    spl_lst.name = name.to_string();
-                    spl_lst.save_dc=dc;
-                    spl_lst.atk_bonus = attack_bonus;
-                    spl_lst.max_prepared=max_prepared;})
-                    .or_insert(SpellList::new(HashMap::new(),name.to_string(),dc,attack_bonus,max_prepared));
+                spell_ls_dict.entry(id.to_string())
+                    .or_insert_with(|| SpellList::new(HashMap::new(),name.to_string(),dc,attack_bonus,max_prepared));
             }else if val["type"].as_str()==Some("spell")&&val["deactivatedByToggle"].as_bool()!=Some(true){
                 let ancestors = val["ancestors"].as_array().unwrap();
                 let mut spl_list_id: String = String::new();
@@ -728,7 +723,7 @@ impl Character{
                     spl.prepare();
                 }
                 let _=spell_ls_dict.entry(spl_list_id.to_string()).and_modify(|ls|{
-                    ls.levels.entry(lvl).and_modify(|splvl| {splvl.add_spell(spl.clone());}).or_insert(SpellLevel::new(lvl,vec![spl]));}
+                    ls.levels.entry(lvl).and_modify(|splvl| {splvl.add_spell(spl.clone());}).or_insert_with(|| SpellLevel::new(lvl,vec![spl]));}
                 );
             }else if val["type"].as_str()==Some("damageMultiplier") && val["inactive"].as_bool()!=Some(true){
                 let mult = val["value"].as_f64().unwrap();
@@ -970,7 +965,7 @@ fn race_translator(race: String,race_decoder: Value)-> String{
     }
     out.into_iter().collect()
 }
-
+#[derive(Default)]
 pub struct Hline{
 
 }
@@ -982,7 +977,7 @@ impl Hline{
 impl Element for Hline{
     fn render(
         &mut self, 
-        context: &Context, 
+        _context: &Context, 
         area: Area<'_>, 
         style: Style
     ) -> Result<RenderResult, Error>{
