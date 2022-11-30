@@ -622,6 +622,9 @@ impl Character{
         let props = char_json["creatureProperties"].as_array_mut().unwrap();
         props.sort_by(|a,b| a["order"].as_i64().unwrap().cmp(&b["order"].as_i64().unwrap()));
         for val in props{
+            if val["removed"].as_bool()==Some(true){
+                continue;
+            }
             if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("ability"){
                 ability_scores.push(AbilityScore::new(val["name"].as_str().unwrap().to_string(),
                     val["total"].as_i64().unwrap()));
@@ -690,12 +693,12 @@ impl Character{
                     }
                 }
                 // assume this always works
-                let name = val["name"].as_str().unwrap().to_string();
-                let lvl = val["level"].as_i64().unwrap();
-                let casting_time = val["actionType"].as_str().unwrap().to_string();
-                let duration = val["duration"].as_str().unwrap().to_string();
-                let school = val["school"].as_str().unwrap().to_string();
-                let range = val["range"].as_str().unwrap().to_string();
+                let name = val["name"].as_str().unwrap_or("").to_string();
+                let lvl = val["level"].as_i64().unwrap_or(0);
+                let casting_time = val["actionType"].as_str().unwrap_or("").to_string();
+                let duration = val["duration"].as_str().unwrap_or("").to_string();
+                let school = val["school"].as_str().unwrap_or("").to_string();
+                let range = val["range"].as_str().unwrap_or("").to_string();
                 let vscr =(val["verbal"].as_bool()==Some(true),val["somatic"].as_bool()==Some(true),
                     val["concentration"].as_bool()==Some(true),val["ritual"].as_bool()==Some(true));
                 let material = match val["material"].as_str(){
@@ -772,7 +775,7 @@ impl Character{
                 }
             }else if val["type"].as_str()==Some("action"){
                 if val["actionType"].as_str()==Some("attack") && val["inactive"].as_bool()!=Some(true){
-                    let bns = AtkBonus::Bonus(val["attackRoll"]["value"].as_i64().unwrap());
+                    let bns = AtkBonus::Bonus(val["attackRoll"]["value"].as_i64().unwrap_or(0));
                     let id = val["_id"].as_str().unwrap().to_string();
                     let dmg = match attacks_dict.get(&id){
                         Some(atk)=>atk.damage(),
