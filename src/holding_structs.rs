@@ -851,7 +851,8 @@ impl Character{
                 }
             }else if val["type"].as_str()==Some("attribute") && val["attributeType"].as_str()==Some("resource") {
                 if val["inactive"].as_bool() !=Some(true){
-                    resources.push(Resource::new(val["name"].as_str().unwrap().to_string(),val["total"].as_i64().unwrap_or(0)));
+                    resources.push(Resource::new(val["name"].as_str().unwrap().to_string(),
+                    val["total"].as_i64().unwrap_or(0)));
                 }
             }else if val["name"].as_str()==Some("Proficiency Bonus"){
                 prof_bonus=val["total"].as_i64().unwrap();
@@ -868,7 +869,7 @@ impl Character{
                     if race==String::new(){
                         race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
                     }
-                } else if val["type"].as_str()==Some("constant") && val["variableName"].as_str()==Some("subRace"){
+                } else if val["variableName"].as_str()==Some("subRace"){
                     race = val["calculation"].as_str().unwrap().to_string().replace('\"',"");
                 } else if val["variableName"].as_str()==Some("startingClass"){
                     starting_class = val["calculation"].as_str().unwrap().trim().to_string();
