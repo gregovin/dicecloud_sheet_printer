@@ -15,7 +15,7 @@ pub async fn get_token(username: String, psw: String)->String{
     let mut map =HashMap::new();
     map.insert("username",username.trim());
     map.insert("password",psw.trim());
-    let res = client.post("https://beta.dicecloud.com/api/login")
+    let res = client.post("https://www.dicecloud.com/api/login")
         .json(&map)
         .send()
         .await
@@ -61,7 +61,7 @@ pub async fn get_img_from_url(img_url: String)->image::DynamicImage{
     ImageReader::new(Cursor::new(res_bytes)).with_guessed_format().expect("Failed to parse format").decode().expect("failed to decode").resize(540,2000,FilterType::CatmullRom)
 }
 pub fn get_char_url(caracter_id: String) -> String{
-    format!("https://beta.dicecloud.com/api/creature/{}",caracter_id.trim())
+    format!("https://www.dicecloud.com/api/creature/{}",caracter_id.trim())
 }
 pub fn generate_pdf()->genpdf::Document{
     //define the default font for the document
